@@ -1,5 +1,8 @@
 body {
     height: 100vh;
+    background-color: bisque;
+    text-align: center;
+    font-family: 'Open Sans', sans-serif;
 }
 
 .container {
@@ -14,10 +17,12 @@ h1 {
 
 .side-left {
     grid-column: 1;
+    margin-top: 13px;
 }
 
 .player-section {
     grid-column: 2;
+    margin-top: 30px;
 }
 
 .player-tiles {
@@ -30,15 +35,25 @@ h1 {
     border: 1px solid black;
     cursor: pointer;
     margin: 2px;
+    box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.75);
+    font-size: 30px;
 }
 
 .buttons {
     grid-column: 3;
+    margin-top: 83px;
 }
 
 .tiles-container {
     display: flex;
     flex-wrap: wrap;
+    max-width: 100vmin;
+    max-height: 50vmin;
+}
+
+#play-area {
+    overflow: auto;
+    justify-content: center;
 }
 
 .tile-area {
@@ -49,18 +64,63 @@ h1 {
     width: 50px;
     height: 50px;
     border: 1px solid black;
-    cursor: pointer;
+    /* cursor: pointer; */
     margin: 2px;
+    box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.75);
+    font-size: 30px;
 }
 
 .tile-play-area {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
     width: 50px;
     height: 50px;
     border: 1px solid black;
     cursor: pointer;
     margin: 2px;
+    box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.75);
+    font-size: 30px;
+}
+
+#split {
+    background-color: #4CAF50;
+    color: white;
+    padding: 2vmin 4vmin;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#split:hover {
+    opacity: 0.8;
+    background-color: #33d038;
+    color: black;
+}
+
+#dump {
+    background-color: red;
+    color: white;
+    padding: 2vmin 4vmin;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#dump:hover {
+    opacity: 0.8;
+    background-color: rgb(255, 68, 0);
+    color: black;
+}
+
+#peel {
+    background-color: blue;
+    color: white;
+    padding: 2vmin 4vmin;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#peel:hover {
+    opacity: 0.8;
+    background-color: rgb(0, 121, 251);
+    color: black;
 }

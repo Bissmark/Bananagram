@@ -1,14 +1,3 @@
-/*
-- Tiles are in the center of the board and they are randomly shuffled
-- Each player starts with 21 tiles
-
-- press new game, takes 12 tiles from the centre tiles area and give them to the player
-- players can then create words using these tiles
-- players can also swap tiles for new ones from the centre tiles area by pressing dump (take 3 tiles from the play area and return 1)
-- players can also take a new tile from the centre tiles area by pressing peel (take 1 tile from the centre tiles area)
-
-*/
-
 /*----- constants -----*/
 const letters = {'a': 13, 'b': 3, 'c': 3, 'd': 6, 'e': 18, 'f': 3, 'g': 4, 'h': 3, 'i': 12, 'j': 2, 'k': 2, 'l': 5, 'm': 3, 'n': 8, 'o': 11, 'p': 3, 'q': 2, 'r': 9, 's': 6, 't': 9, 'u': 6, 'v': 3, 'w': 3, 'y': 3, 'z': 2
 };
@@ -34,22 +23,21 @@ const originalTilesElement = document.getElementById('original-tiles');
 
 /*----- event listeners -----*/
 document.getElementById('split').addEventListener('click', () => {
-    buildOriginalTiles();
-    shuffleTiles(document.getElementById('original-tiles'));
-    split(shuffledTiles, 21, document.getElementById('player-tiles'));
+    buildOriginalTiles(); // Build the original tiles array
+    shuffleTiles(document.getElementById('original-tiles')); // Shuffle the tiles
+    split(shuffledTiles, 21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
     letterTileElements = document.querySelectorAll('.player-tiles');
-    attachLetterTileEventListeners();
-    //buildPlayArea(document.getElementById('play-area'));
+    attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
 });
 
 document.getElementById('peel').addEventListener('click', () => {
-    peel(document.getElementById('player-tiles'));
+    peel(document.getElementById('player-tiles')); // Take 1 tile from the tile area and put it into the player's hand
     letterTileElements = document.querySelectorAll('.player-tiles');
-    attachLetterTileEventListeners();
+    attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
 });
 
 document.getElementById('dump').addEventListener('click', () => {
-    dump(3, document.getElementById('player-tiles'), 1);
+    dump(3, document.getElementById('player-tiles'), 1); // Take 3 tiles from the tile area and put them into the player's hand, then return 1 tile to the tile area
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners();
 
@@ -69,15 +57,19 @@ function buildOriginalTiles() {
 const buildPlayArea = (element) => {
     html = '';
     for (let i = 0; i < 418; i++) {
-        html += `<div class="tile-play-area"></div>`;
+        html += `<div class="tile-play-area"></div>`; // Create 418 empty tiles
     }
     element.innerHTML = html;
 
+    clearTilePlayArea();
+};
+
+const clearTilePlayArea = () => {
     const playAreaTiles = document.querySelectorAll('.tile-play-area');
     playAreaTiles.forEach(tile => {
-        tile.textContent = '';
+        tile.textContent = ''; // Clear the play tile area (when restarting the game)
     });
-};
+}
 
 buildPlayArea(document.getElementById('play-area'));
 
@@ -116,7 +108,18 @@ const updatePlayerTiles = () => {
     attachLetterTileEventListeners();
 }
 
+const updateOriginalTiles = (element) => {
+    const originalTilesElement = document.getElementById('original-tiles');
+    originalTilesElement.innerHTML = ''; // Clear the content
+    
+    shuffledTiles.forEach((value) => {
+        originalTilesElement.innerHTML += `<div class="tile-area">${value}</div>`;
+    });
+    element.innerHTML = htmlPlayer;
+}
+
 const emptyTiles = document.querySelectorAll('.tile-play-area');
+
 emptyTiles.forEach(emptyTile => {
     emptyTile.addEventListener('click', () => {
         if (selectedTile && emptyTile.textContent === '') {
@@ -153,10 +156,7 @@ function split(array, count, element) {
     randomValues.length = 0;
     html = '';
     htmlPlayer = '';
-    const playAreaTiles = document.querySelectorAll('.tile-play-area');
-    playAreaTiles.forEach(tile => {
-        tile.textContent = '';
-    });
+    clearTilePlayArea();
     const startTilesCopy = [...array]; // Create a copy of the original array to avoid modifying it
     
     // Get 21 random values
@@ -175,19 +175,8 @@ function split(array, count, element) {
     return randomValues;
 };
 
-const updateOriginalTiles = (element) => {
-    const originalTilesElement = document.getElementById('original-tiles');
-    originalTilesElement.innerHTML = ''; // Clear the content
-    
-    shuffledTiles.forEach((value) => {
-        originalTilesElement.innerHTML += `<div class="tile-area">${value}</div>`;
-    });
-    element.innerHTML = htmlPlayer;
-}
-
 function peel(element) {
     htmlPlayer = '';
-    //const startTilesCopy = [...array]; // Create a copy of the original array to avoid modifying it
 
     // Get 1 random tile
     const randomIndex = Math.floor(Math.random() * shuffledTiles.length);
@@ -200,44 +189,12 @@ function peel(element) {
     // Update the original-tiles element with the updated tiles
     updateOriginalTiles(element);
     element.innerHTML = htmlPlayer;
-    //startTiles = startTilesCopy; // Restore the original array
 
     return randomValues;
 }
 
 function dump(amountToTake, element, amountToReturn) {
-    // // randomValues.length = 0;
-    // // const startTilesCopy = [...randomValues]; // Create a copy of the original array to avoid modifying it
-    // const tilesTaken = [];
-    
-    // // Get 21 random values
-    // for (let i = 0; i < amountToTake; i++) {
-    //     if (shuffledTiles.length > 0) {
-    //         const randomIndex = Math.floor(Math.random() * shuffledTiles.length);
-    //         const randomValue = shuffledTiles.splice(randomIndex, 1)[0]; // Remove the selected value from the array
-    //         tilesTaken.push(randomValue);
-    //         randomValues.push(randomValue);
-    //         htmlPlayer += `<div class="player-tiles" data-index="${randomIndex}">${randomValue}</div>`;
-    //     }
-    // }
-
-    // //  Update the original-tiles element with the 21 random tiles
-    // updateOriginalTiles(element);
-
-    // if (amountToReturn > 0) {
-    //     if (randomValues.length > 0) {
-    //         const tileToReturn = randomValues.pop();
-    //         shuffledTiles.push(tileToReturn);
-    //         //htmlPlayer += `<div class="player-tiles">${tileToReturn}</div>`;
-    //     }
-    // }
-
-    // element.innerHTML = htmlPlayer;
-    // //startTiles = startTilesCopy; // Restore the original array
-    
-    // return randomValues;
      const tilesTaken = [];
-    //htmlPlayer = '';
 
     // Take 3 tiles from the tile area
     for (let i = 0; i < amountToTake; i++) {

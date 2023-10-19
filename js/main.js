@@ -84,11 +84,18 @@ buildPlayArea(document.getElementById('play-area'));
 // Adding event listeners to the tiles in the player's hand, so we can move them to the play area
 const attachLetterTileEventListeners = () => {
     if (letterTileElements) {
+        let previousSelectedTile = null;
         letterTileElements.forEach((letterTile, index) => {
             letterTile.addEventListener('click', () => {
-                letterTile.style.backgroundColor = 'green';
+                
+                if (previousSelectedTile) {
+                    previousSelectedTile.style.backgroundColor = '';
+                }
+                letterTile.style.backgroundColor = 'mediumseagreen';
                 selectedTile = letterTile.textContent;
                 selectedTileIndex = index;
+
+                previousSelectedTile = letterTile;
             });
         });
     }

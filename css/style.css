@@ -52,7 +52,7 @@ h1 {
 }
 
 #play-area {
-    overflow: auto;
+    overflow-x: auto;
     justify-content: center;
 }
 

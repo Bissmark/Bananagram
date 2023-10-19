@@ -33,10 +33,6 @@ const state = {
 const originalTilesElement = document.getElementById('original-tiles');
 
 /*----- event listeners -----*/
-const placeTile = () => {
-    state.player = (state.player === 'player1') ? 'computer' : 'player1';
-}
-
 document.getElementById('split').addEventListener('click', () => {
     buildOriginalTiles();
     shuffleTiles(document.getElementById('original-tiles'));
@@ -85,10 +81,12 @@ const buildPlayArea = (element) => {
 
 buildPlayArea(document.getElementById('play-area'));
 
+// Adding event listeners to the tiles in the player's hand, so we can move them to the play area
 const attachLetterTileEventListeners = () => {
     if (letterTileElements) {
         letterTileElements.forEach((letterTile, index) => {
             letterTile.addEventListener('click', () => {
+                letterTile.style.backgroundColor = 'mediumseagreen';
                 selectedTile = letterTile.textContent;
                 selectedTileIndex = index;
             });

@@ -86,7 +86,7 @@ const attachLetterTileEventListeners = () => {
     if (letterTileElements) {
         letterTileElements.forEach((letterTile, index) => {
             letterTile.addEventListener('click', () => {
-                letterTile.style.backgroundColor = 'mediumseagreen';
+                letterTile.style.backgroundColor = 'green';
                 selectedTile = letterTile.textContent;
                 selectedTileIndex = index;
             });

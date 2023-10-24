@@ -42,6 +42,7 @@ h1 {
 .buttons {
     grid-column: 3;
     margin-top: 83px;
+    height: 10%;
 }
 
 .tiles-container {
@@ -77,6 +78,10 @@ h1 {
     margin: 2px;
     box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.75);
     font-size: 30px;
+}
+
+.message {
+    grid-column: 3;
 }
 
 #split {
@@ -121,5 +126,20 @@ h1 {
 #peel:hover {
     opacity: 0.8;
     background-color: rgb(0, 121, 251);
+    color: black;
+}
+
+#bananas {
+    background-color: yellow;
+    color: black;
+    padding: 2vmin 4vmin;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#bananas:hover {
+    opacity: 0.8;
+    background-color: yellowgreen;
     color: black;
 }

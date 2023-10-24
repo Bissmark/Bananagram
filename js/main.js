@@ -1,3 +1,7 @@
+/* API stuff  */
+let wordToCheck;
+const word = `https://api.dictionaryapi.dev/api/v2/entries/en/${wordToCheck}`;
+
 /*----- constants -----*/
 const letters = {'a': 13, 'b': 3, 'c': 3, 'd': 6, 'e': 18, 'f': 3, 'g': 4, 'h': 3, 'i': 12, 'j': 2, 'k': 2, 'l': 5, 'm': 3, 'n': 8, 'o': 11, 'p': 3, 'q': 2, 'r': 9, 's': 6, 't': 9, 'u': 6, 'v': 3, 'w': 3, 'y': 3, 'z': 2
 };
@@ -13,6 +17,7 @@ let selectedTileIndex = null;
 let letterTileElements;
 
 /*----- cached elements  -----*/
+const messageElement = document.getElementById('message');
 
 /*----- event listeners -----*/
 document.getElementById('split').addEventListener('click', () => {
@@ -166,6 +171,7 @@ function split(array, count, element) {
     randomValues.length = 0;
     html = '';
     htmlPlayer = '';
+    messageElement.innerHTML = ''; // Clear the message area
     clearTilePlayArea();
     const startTilesCopy = [...array]; // Create a copy of the original array to avoid modifying it
     
@@ -242,4 +248,131 @@ function dump(element) {
 
     // Update the player's tiles area
     updatePlayerTiles();
+}
+
+// Add a listener for the "Bananas" button
+document.getElementById('bananas').addEventListener('click', () => {
+    const horizontalWords = extractWordsFromPlayArea('horizontal');
+    const verticalWords = extractWordsFromPlayArea('vertical');
+
+    // Combine horizontal and vertical words and remove duplicates
+    const allWords = [...new Set([...horizontalWords, ...verticalWords])];
+
+    // Find and display the longest word from the list
+    const longestWord = findLongestWord(allWords);
+    if (longestWord) {
+        messageElement.innerHTML = `"${longestWord}" exists in the dictionary.`;
+    } else {
+        messageElement.innerHTML = 'No valid word found.';
+    }
+});
+
+function findLongestWord(words) {
+    let longestWord = '';
+    words.forEach(word => {
+        if (word.length > longestWord.length) {
+            longestWord = word;
+        }
+    });
+    return longestWord;
+}
+
+function extractWordsFromPlayArea(direction) {
+    const playAreaTiles = document.querySelectorAll('.tile-play-area');
+    let wordsInPlayArea = [];
+
+    
+    if (direction === 'vertical') {
+        for (let i = 0; i < 19; i++) { // Assuming 19 columns
+            for (let j = 0; j < 22; j++) { // Assuming 22 rows
+                const index = j * 19 + i; // Calculate the index for the vertical check
+                const playAreaTile = playAreaTiles[index];
+                if (playAreaTile.textContent !== '') {
+                    // Vertical words
+                    const currentWord = getVerticalWord(playAreaTiles, j, i);
+                    if (currentWord.length > 1) {
+                        wordsInPlayArea.push(currentWord);
+                    }
+
+                    // Skip to the end of the current word
+                    j += currentWord.length - 1;
+                }
+            }
+        }
+    } else if (direction === 'horizontal') {
+        playAreaTiles.forEach((playAreaTile, index) => {
+            if (playAreaTile.textContent !== '') {
+                // Horizontal words
+                const currentWord = getHorizontalWord(playAreaTiles, index);
+                if (currentWord.length > 1) {
+                    wordsInPlayArea.push(currentWord);
+                }
+
+                // Skip to the end of the current word
+                index += currentWord.length - 1;
+            }
+        });
+    } 
+
+    return wordsInPlayArea;
+}
+
+function getHorizontalWord(playAreaTiles, startIndex) {
+    const currentWord = [];
+    let currentIndex = startIndex;
+
+    while (currentIndex < playAreaTiles.length && playAreaTiles[currentIndex].textContent !== '') {
+        currentWord.push(playAreaTiles[currentIndex].textContent);
+        currentIndex++;
+    }
+
+    return currentWord.join('');
+}
+
+function getVerticalWord(playAreaTiles, rowIndex, colIndex) {
+    const currentWord = [];
+    let currentIndex = rowIndex * 19 + colIndex;
+
+    while (currentIndex < playAreaTiles.length && playAreaTiles[currentIndex].textContent !== '') {
+        currentWord.push(playAreaTiles[currentIndex].textContent);
+        currentIndex += 19; // Move to the next column
+    }
+
+    return currentWord.join('');
+}
+
+function checkWordsInDictionary(words) {
+    const messageElement = document.getElementById('message');
+    messageElement.innerHTML = ''; // Clear any previous messages
+
+    words.forEach(word => {
+        if (word.length > 1) { // Check if the word has more than one letter
+            // Construct the API URL for checking the word
+            const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+
+            // Send a GET request to the API
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        // The word exists in the dictionary
+                        messageElement.innerHTML += `"${word}" exists in the dictionary.<br>`;
+                    } else {
+                        // The word does not exist in the dictionary
+                        messageElement.innerHTML += `"${word}" does not exist in the dictionary.<br>`;
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error checking "${word}" in the dictionary: ${error}`);
+                });
+        }
+    });
+};
+
+function getPrefixes(word) {
+    const prefixes = [];
+    for (let i = 1; i < word.length; i++) {
+        prefixes.push(word.slice(0, i));
+    }
+    return prefixes;
 }

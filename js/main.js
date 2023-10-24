@@ -13,13 +13,6 @@ let selectedTileIndex = null;
 let letterTileElements;
 
 /*----- cached elements  -----*/
-const state = {
-    tile: document.querySelectorAll('.tile'),
-    player: 'player1',
-    computer: 'computer'
-}
-
-const originalTilesElement = document.getElementById('original-tiles');
 
 /*----- event listeners -----*/
 document.getElementById('split').addEventListener('click', () => {
@@ -37,7 +30,7 @@ document.getElementById('peel').addEventListener('click', () => {
 });
 
 document.getElementById('dump').addEventListener('click', () => {
-    dump(3, document.getElementById('player-tiles'), 1); // Take 3 tiles from the tile area and put them into the player's hand, then return 1 tile to the tile area
+    dump(document.getElementById('player-tiles')); // Take 3 tiles from the tile area and put them into the player's hand, then return 1 tile to the tile area
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners();
 
@@ -62,6 +55,25 @@ const buildPlayArea = (element) => {
     element.innerHTML = html;
 
     clearTilePlayArea();
+
+    const playAreaTiles = document.querySelectorAll('.tile-play-area');
+    playAreaTiles.forEach(playAreaTile => {
+    playAreaTile.addEventListener('click', () => {
+        if (playAreaTile.textContent !== '') {
+            // Get the tile's letter
+            const letter = playAreaTile.textContent;
+
+            // Add the letter back to the player's tiles
+            randomValues.push(letter);
+
+            // Update the player's tiles on the screen
+            updatePlayerTiles();
+
+            // Clear the play area tile
+            playAreaTile.textContent = '';
+        }
+    });
+});
 };
 
 const clearTilePlayArea = () => {
@@ -79,14 +91,12 @@ const attachLetterTileEventListeners = () => {
         let previousSelectedTile = null;
         letterTileElements.forEach((letterTile, index) => {
             letterTile.addEventListener('click', () => {
-                
                 if (previousSelectedTile) {
                     previousSelectedTile.style.backgroundColor = '';
                 }
                 letterTile.style.backgroundColor = 'mediumseagreen';
                 selectedTile = letterTile.textContent;
                 selectedTileIndex = index;
-
                 previousSelectedTile = letterTile;
             });
         });
@@ -193,11 +203,32 @@ function peel(element) {
     return randomValues;
 }
 
-function dump(amountToTake, element, amountToReturn) {
-     const tilesTaken = [];
+function dump(element) {
+    // Check if there are at least 3 tiles in the original-tiles
+    if (shuffledTiles.length < 3) {
+        alert("Not enough tiles in the original-tiles to perform a dump.");
+        return;
+    }
 
-    // Take 3 tiles from the tile area
-    for (let i = 0; i < amountToTake; i++) {
+    // Prompt the player to select one tile to return to original-tiles
+    const tileToReturn = prompt("Select one of your tiles to return to the original-tiles:");
+    
+    // Check if the selected tile is in the player's tiles
+    const playerTileIndex = randomValues.indexOf(tileToReturn);
+    if (playerTileIndex !== -1) {
+        // Remove the selected tile from the player's tiles
+        randomValues.splice(playerTileIndex, 1);
+        
+        // Add the selected tile back to the original-tiles
+        shuffledTiles.push(tileToReturn);
+    } else {
+        alert("Invalid tile selection. The tile must be in your tiles.");
+        return;
+    }
+
+    // Take 3 random tiles from the original-tiles
+    const tilesTaken = [];
+    for (let i = 0; i < 3; i++) {
         if (shuffledTiles.length > 0) {
             const randomIndex = Math.floor(Math.random() * shuffledTiles.length);
             const randomValue = shuffledTiles.splice(randomIndex, 1)[0];
@@ -206,23 +237,9 @@ function dump(amountToTake, element, amountToReturn) {
         }
     }
 
-    // Add the 3 tiles taken from the tile area to the player's tiles area
-    tilesTaken.forEach((value) => {
-        htmlPlayer += `<div class="player-tiles">${value}</div>`;
-    });
-
     // Update the original-tiles element with the updated tiles
     updateOriginalTiles(element);
 
-    // Return 1 tile to the tile area from the player's hand
-    if (amountToReturn > 0) {
-        if (randomValues.length >= 1) {
-            const tileToReturn = randomValues.pop();
-            shuffledTiles.push(tileToReturn);
-        }
-    }
-
-    element.innerHTML = htmlPlayer;
-
-    return randomValues;
+    // Update the player's tiles area
+    updatePlayerTiles();
 }

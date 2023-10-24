@@ -80,8 +80,17 @@ h1 {
     font-size: 30px;
 }
 
-.message {
-    grid-column: 3;
+.message-section {
+    height: 300px;
+    background-color: aliceblue;
+    border-radius: 10px;
+    max-width: 70%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.message-box {
+    text-align: left;
 }
 
 #split {

@@ -261,7 +261,7 @@ document.getElementById('bananas').addEventListener('click', () => {
     // Find and display the longest word from the list
     const longestWord = findLongestWord(allWords);
     if (longestWord) {
-        messageElement.innerHTML = `"${longestWord}" exists in the dictionary.`;
+        messageElement.innerHTML = `<li class="message-box">"${longestWord}" exists in the dictionary.</li>`;
     } else {
         messageElement.innerHTML = 'No valid word found.';
     }

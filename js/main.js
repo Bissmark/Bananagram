@@ -128,7 +128,7 @@ const updateOriginalTiles = (element) => {
     originalTilesElement.innerHTML = ''; // Clear the content
     
     shuffledTiles.forEach((value) => {
-        originalTilesElement.innerHTML += `<div class="tile-area">${value}</div>`;
+        originalTilesElement.innerHTML += `<div class="tile-area"></div>`;
     });
     element.innerHTML = htmlPlayer;
 }

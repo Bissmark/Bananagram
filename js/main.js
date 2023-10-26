@@ -18,6 +18,7 @@ let letterTileElements;
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
+const randomizeButton = document.getElementById('randomize-tiles');
 
 /*----- event listeners -----*/
 document.getElementById('split').addEventListener('click', () => {
@@ -26,6 +27,7 @@ document.getElementById('split').addEventListener('click', () => {
     split(shuffledTiles, 21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
+    randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
 });
 
 document.getElementById('peel').addEventListener('click', () => {

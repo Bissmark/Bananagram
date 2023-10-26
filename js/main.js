@@ -38,8 +38,11 @@ document.getElementById('dump').addEventListener('click', () => {
     dump(document.getElementById('player-tiles')); // Take 3 tiles from the tile area and put them into the player's hand, then return 1 tile to the tile area
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners();
-
 });
+
+document.getElementById('randomize-tiles').addEventListener('click', () => {
+    randomizePlayerTiles(); // Randomize the player's tiles
+})
 
 /*----- functions -----*/
 function buildOriginalTiles() {
@@ -152,6 +155,29 @@ emptyTiles.forEach(emptyTile => {
         }
     });
 });
+
+function randomizePlayerTiles() {
+    const playerTilesElement = document.getElementById('player-tiles');
+    const playerTiles = Array.from(playerTilesElement.querySelectorAll('.player-tiles'));
+
+    // Shuffle the order of player tiles
+    shuffleArray(playerTiles);
+
+    // Clear the player's hand
+    playerTilesElement.innerHTML = '';
+
+    // Reattach the shuffled tiles
+    playerTiles.forEach((tile, index) => {
+        playerTilesElement.appendChild(tile);
+    })
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+    }
+}
 
 const shuffleTiles = (element) => {
     html = '';
@@ -375,4 +401,4 @@ function getPrefixes(word) {
         prefixes.push(word.slice(0, i));
     }
     return prefixes;
-}
+};

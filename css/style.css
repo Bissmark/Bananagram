@@ -93,6 +93,29 @@ h1 {
     text-align: left;
 }
 
+.title-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#randomize-tiles {
+    background-color: #4CAF50;
+    color: white;
+    padding: 1vmin 2vmin;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-left: 3em;
+}
+
+#randomize-tiles:hover {
+    opacity: 0.8;
+    background-color: #33d038;
+    color: black;
+}
+
 #split {
     background-color: #4CAF50;
     color: white;

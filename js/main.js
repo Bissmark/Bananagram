@@ -1,3 +1,23 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js'
+import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js'
+
+// If you enabled Analytics in your project, add the Firebase SDK for Google Analytics
+import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-analytics.js'
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCc-D4BmYSU9S-PTKzshUojIr5THkvpYpI",
+    authDomain: "bananagrams-26d56.firebaseapp.com",
+    projectId: "bananagrams-26d56",
+    storageBucket: "bananagrams-26d56.appspot.com",
+    messagingSenderId: "583172000650",
+    appId: "1:583172000650:web:42ff03eb30377391471673",
+    measurementId: "G-2R9K0X5YNC"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 /* API stuff  */
 let wordToCheck;
 const word = `https://api.dictionaryapi.dev/api/v2/entries/en/${wordToCheck}`;
@@ -15,6 +35,9 @@ let htmlPlayer = '';
 let selectedTile = null;
 let selectedTileIndex = null;
 let letterTileElements;
+let currentColumns = 19; // Initial number of columns
+let currentRows = 22; // Initial number of rows
+let startTiles = [];
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
@@ -46,6 +69,14 @@ document.getElementById('randomize-tiles').addEventListener('click', () => {
     randomizePlayerTiles(); // Randomize the player's tiles
 })
 
+document.getElementById('row').addEventListener('click', () => {
+    addRow();
+});
+
+document.getElementById('column').addEventListener('click', () => {
+    addColumn();
+});
+
 /*----- functions -----*/
 function buildOriginalTiles() {
     originalTiles.length = 0;
@@ -57,10 +88,68 @@ function buildOriginalTiles() {
     return originalTiles;
 };
 
+function addColumn() {
+    // Increment the number of columns
+    currentColumns += 1;
+
+    // Find the play area
+    const playArea = document.getElementById('play-area');
+    const playAreaRows = playArea.querySelectorAll('.play-area-row');
+
+    // Add cells to each row
+    playAreaRows.forEach(row => {
+        const newCell = document.createElement('div');
+        newCell.className = 'tile-play-area';
+        row.appendChild(newCell);
+    });
+
+    // Clear the play area
+    clearTilePlayArea();
+};
+
+function addRow() {
+    // Increment the number of rows
+    currentRows += 1;
+
+    // Find the play area
+    const playArea = document.getElementById('play-area');
+
+    // Create a new row
+    const newRow = document.createElement('div');
+    newRow.className = 'play-area-row';
+
+    // Add cells to the new row for the entire row
+    for (let j = 0; j < currentColumns; j++) {
+        const newCell = document.createElement('div');
+        newCell.className = 'tile-play-area';
+        newRow.appendChild(newCell);
+    }
+
+    // Append the new row to the top of the play area
+    playArea.insertBefore(newRow, playArea.firstChild);
+
+    // Clear the play area
+    clearTilePlayArea();
+}
+
 const buildPlayArea = (element) => {
+    const currentColumns = 19; // Assuming 19 columns initially
+    const currentRows = 22; // Assuming 22 rows initially
+
+    const newColumns = currentColumns + 1; // Add an extra column
+    const newRows = currentRows + 1; // Add an extra row
+
     html = '';
-    for (let i = 0; i < 418; i++) {
-        html += `<div class="tile-play-area"></div>`; // Create 418 empty tiles
+
+    for (let i = 0; i < newRows; i++) {
+        for (let j = 0; j < newColumns; j++) {
+            if (i < currentRows && j < currentColumns) {
+                html += `<div class="tile-play-area"></div>`;
+            } else {
+                // Add new cells for the extra row and column
+                html += `<div class="tile-play-area"></div>`;
+            }
+        }
     }
     element.innerHTML = html;
 

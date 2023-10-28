@@ -57,8 +57,16 @@ h1 {
 }
 
 #play-area {
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(19, 1fr);
+    overflow: auto;
     justify-content: center;
+}
+
+.play-area-row {
+    display: flex;
+    height: 52px; /* Adjust this height to match the height of your tiles including margins */
+    margin-bottom: -2px; /* Counteract the bottom margin of the tiles */
 }
 
 .tile-area {

@@ -19,7 +19,7 @@ let currentColumns = 19; // Initial number of columns
 let currentRows = 22; // Initial number of rows
 let startTiles = [];
 const playAreaGrid = []; // 2D grid to represent the play area
-let wordsToCheck = []; // Array to store words in both directions
+const wordsToCheck = []; // Array to store words in both directions
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
@@ -27,13 +27,24 @@ const randomizeButton = document.getElementById('randomize-tiles');
 
 /*----- event listeners -----*/
 document.getElementById('split').addEventListener('click', () => {
+    // Clear the play area grid
+    for (let i = 0; i < currentRows; i++) {
+        for (let j = 0; j < currentColumns; j++) {
+            playAreaGrid[i][j] = { letter: '', direction: '' };
+        }
+    }
+
     buildOriginalTiles(); // Build the original tiles array
     shuffleTiles(document.getElementById('original-tiles')); // Shuffle the tiles
     split(shuffledTiles, 21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
+    wordsToCheck.length = 0;
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
-    wordsToCheck = [];
+    clearTilePlayArea(); // Clear the play area display
+    checkWords(); // Recheck words
+    // Add code here to update the display based on the cleared `wordsToCheck`
+    // ...
 });
 
 document.getElementById('peel').addEventListener('click', () => {
@@ -315,7 +326,7 @@ function split(array, count, element) {
     html = '';
     htmlPlayer = '';
     messageElement.innerHTML = ''; // Clear the message area
-    clearTilePlayArea();
+    clearTilePlayArea(); // Clear the play area
     const startTilesCopy = [...array]; // Create a copy of the original array to avoid modifying it
     
     // Get 21 random values
@@ -415,12 +426,12 @@ function checkWords() {
             const letter = playAreaGrid[rowIndex][colIndex].letter;
             if (letter !== '') {
                 word += letter;
-            } else if (word !== '') {
+            } else if (word !== '' && word.length > 1) { // Check if the word is more than one character
                 wordsToCheck.push(word);
                 word = '';
             }
         }
-        if (word !== '') {
+        if (word !== '' && word.length > 1) { // Check if the last word is more than one character
             wordsToCheck.push(word);
         }
     }
@@ -432,12 +443,12 @@ function checkWords() {
             const letter = playAreaGrid[rowIndex][colIndex].letter;
             if (letter !== '') {
                 word += letter;
-            } else if (word !== '') {
+            } else if (word !== '' && word.length > 1) { // Check if the word is more than one character
                 wordsToCheck.push(word);
                 word = '';
             }
         }
-        if (word !== '') {
+        if (word !== '' && word.length > 1) { // Check if the last word is more than one character
             wordsToCheck.push(word);
         }
     }

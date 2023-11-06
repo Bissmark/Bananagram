@@ -1,23 +1,3 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js'
-import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js'
-
-// If you enabled Analytics in your project, add the Firebase SDK for Google Analytics
-import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-analytics.js'
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCc-D4BmYSU9S-PTKzshUojIr5THkvpYpI",
-    authDomain: "bananagrams-26d56.firebaseapp.com",
-    projectId: "bananagrams-26d56",
-    storageBucket: "bananagrams-26d56.appspot.com",
-    messagingSenderId: "583172000650",
-    appId: "1:583172000650:web:42ff03eb30377391471673",
-    measurementId: "G-2R9K0X5YNC"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
 /* API stuff  */
 let wordToCheck;
 const word = `https://api.dictionaryapi.dev/api/v2/entries/en/${wordToCheck}`;
@@ -38,6 +18,8 @@ let letterTileElements;
 let currentColumns = 19; // Initial number of columns
 let currentRows = 22; // Initial number of rows
 let startTiles = [];
+const playAreaGrid = []; // 2D grid to represent the play area
+const wordsToCheck = []; // Array to store words in both directions
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
@@ -69,12 +51,43 @@ document.getElementById('randomize-tiles').addEventListener('click', () => {
     randomizePlayerTiles(); // Randomize the player's tiles
 })
 
-document.getElementById('row').addEventListener('click', () => {
-    addRow();
-});
+// document.getElementById('row').addEventListener('click', () => {
+//     addRow();
+// });
 
-document.getElementById('column').addEventListener('click', () => {
-    addColumn();
+// document.getElementById('column').addEventListener('click', () => {
+//     addColumn();
+// });
+
+document.getElementById('bananas').addEventListener('click', async () => {
+    const messageElement = document.getElementById('message');
+    messageElement.innerHTML = '';
+
+    // Create a set to store the unique words to check
+    const uniqueWordsToCheck = new Set();
+
+    for (const word of wordsToCheck) {
+        // Check if the word is not a substring of any other word
+        let isSubstring = false;
+
+        for (const otherWord of wordsToCheck) {
+            if (word !== otherWord && otherWord.includes(word)) {
+                isSubstring = true;
+                break;
+            }
+        }
+
+        if (!isSubstring) {
+            uniqueWordsToCheck.add(word);
+        }
+    }
+
+    for (const word of uniqueWordsToCheck) {
+        const isValidWord = await checkWord(word);
+        const listItem = document.createElement('li');
+        listItem.textContent = word + (isValidWord ? ' exists' : ' does not exist') + ' in the dictionary';
+        messageElement.appendChild(listItem);
+    }
 });
 
 /*----- functions -----*/
@@ -88,49 +101,49 @@ function buildOriginalTiles() {
     return originalTiles;
 };
 
-function addColumn() {
-    // Increment the number of columns
-    currentColumns += 1;
+// function addColumn() {
+//     // Increment the number of columns
+//     currentColumns += 1;
 
-    // Find the play area
-    const playArea = document.getElementById('play-area');
-    const playAreaRows = playArea.querySelectorAll('.play-area-row');
+//     // Find the play area
+//     const playArea = document.getElementById('play-area');
+//     const playAreaRows = playArea.querySelectorAll('.play-area-row');
 
-    // Add cells to each row
-    playAreaRows.forEach(row => {
-        const newCell = document.createElement('div');
-        newCell.className = 'tile-play-area';
-        row.appendChild(newCell);
-    });
+//     // Add cells to each row
+//     playAreaRows.forEach(row => {
+//         const newCell = document.createElement('div');
+//         newCell.className = 'tile-play-area';
+//         row.appendChild(newCell);
+//     });
 
-    // Clear the play area
-    clearTilePlayArea();
-};
+//     // Clear the play area
+//     clearTilePlayArea();
+// };
 
-function addRow() {
-    // Increment the number of rows
-    currentRows += 1;
+// function addRow() {
+//     // Increment the number of rows
+//     currentRows += 1;
 
-    // Find the play area
-    const playArea = document.getElementById('play-area');
+//     // Find the play area
+//     const playArea = document.getElementById('play-area');
 
-    // Create a new row
-    const newRow = document.createElement('div');
-    newRow.className = 'play-area-row';
+//     // Create a new row
+//     const newRow = document.createElement('div');
+//     newRow.className = 'play-area-row';
 
-    // Add cells to the new row for the entire row
-    for (let j = 0; j < currentColumns; j++) {
-        const newCell = document.createElement('div');
-        newCell.className = 'tile-play-area';
-        newRow.appendChild(newCell);
-    }
+//     // Add cells to the new row for the entire row
+//     for (let j = 0; j < currentColumns; j++) {
+//         const newCell = document.createElement('div');
+//         newCell.className = 'tile-play-area';
+//         newRow.appendChild(newCell);
+//     }
 
-    // Append the new row to the top of the play area
-    playArea.insertBefore(newRow, playArea.firstChild);
+//     // Append the new row to the top of the play area
+//     playArea.insertBefore(newRow, playArea.firstChild);
 
-    // Clear the play area
-    clearTilePlayArea();
-}
+//     // Clear the play area
+//     clearTilePlayArea();
+// }
 
 const buildPlayArea = (element) => {
     const currentColumns = 19; // Assuming 19 columns initially
@@ -142,7 +155,9 @@ const buildPlayArea = (element) => {
     html = '';
 
     for (let i = 0; i < newRows; i++) {
+        playAreaGrid.push([]);
         for (let j = 0; j < newColumns; j++) {
+            playAreaGrid[i][j] = { letter: '', direction: '' };
             if (i < currentRows && j < currentColumns) {
                 html += `<div class="tile-play-area"></div>`;
             } else {
@@ -229,11 +244,18 @@ const updateOriginalTiles = (element) => {
 
 const emptyTiles = document.querySelectorAll('.tile-play-area');
 
-emptyTiles.forEach(emptyTile => {
+emptyTiles.forEach((emptyTile, emptyTileIndex) => {
     emptyTile.addEventListener('click', () => {
         if (selectedTile && emptyTile.textContent === '') {
-            // Place the selected tile's letter in the empty square
+            const rowIndex = Math.floor(emptyTileIndex / currentColumns);
+            const colIndex = emptyTileIndex % currentColumns;
+
+            // Place the selected tile's letter on the grid
+            playAreaGrid[rowIndex][colIndex].letter = selectedTile;
             emptyTile.textContent = selectedTile;
+
+            // Check for words in both horizontal and vertical directions
+            checkWords(rowIndex, colIndex);
 
             if (selectedTileIndex !== null) {
                 // Remove the selected tile from the player's hand
@@ -241,7 +263,7 @@ emptyTiles.forEach(emptyTile => {
                 updatePlayerTiles(); // Update the player's tiles on the screen
                 selectedTileIndex = null;
             }
-            
+
             selectedTile = null; // Clear the selected tile
         }
     });
@@ -365,131 +387,50 @@ function dump(element) {
 
     // Update the player's tiles area
     updatePlayerTiles();
-}
-
-// Add a listener for the "Bananas" button
-document.getElementById('bananas').addEventListener('click', () => {
-    const horizontalWords = extractWordsFromPlayArea('horizontal');
-    const verticalWords = extractWordsFromPlayArea('vertical');
-
-    // Combine horizontal and vertical words and remove duplicates
-    const allWords = [...new Set([...horizontalWords, ...verticalWords])];
-
-    // Find and display the longest word from the list
-    const longestWord = findLongestWord(allWords);
-    if (longestWord) {
-        messageElement.innerHTML = `<li class="message-box">"${longestWord}" exists in the dictionary.</li>`;
-    } else {
-        messageElement.innerHTML = 'No valid word found.';
-    }
-});
-
-function findLongestWord(words) {
-    let longestWord = '';
-    words.forEach(word => {
-        if (word.length > longestWord.length) {
-            longestWord = word;
-        }
-    });
-    return longestWord;
-}
-
-function extractWordsFromPlayArea(direction) {
-    const playAreaTiles = document.querySelectorAll('.tile-play-area');
-    let wordsInPlayArea = [];
-
-    
-    if (direction === 'vertical') {
-        for (let i = 0; i < 19; i++) { // Assuming 19 columns
-            for (let j = 0; j < 22; j++) { // Assuming 22 rows
-                const index = j * 19 + i; // Calculate the index for the vertical check
-                const playAreaTile = playAreaTiles[index];
-                if (playAreaTile.textContent !== '') {
-                    // Vertical words
-                    const currentWord = getVerticalWord(playAreaTiles, j, i);
-                    if (currentWord.length > 1) {
-                        wordsInPlayArea.push(currentWord);
-                    }
-
-                    // Skip to the end of the current word
-                    j += currentWord.length - 1;
-                }
-            }
-        }
-    } else if (direction === 'horizontal') {
-        playAreaTiles.forEach((playAreaTile, index) => {
-            if (playAreaTile.textContent !== '') {
-                // Horizontal words
-                const currentWord = getHorizontalWord(playAreaTiles, index);
-                if (currentWord.length > 1) {
-                    wordsInPlayArea.push(currentWord);
-                }
-
-                // Skip to the end of the current word
-                index += currentWord.length - 1;
-            }
-        });
-    } 
-
-    return wordsInPlayArea;
-}
-
-function getHorizontalWord(playAreaTiles, startIndex) {
-    const currentWord = [];
-    let currentIndex = startIndex;
-
-    while (currentIndex < playAreaTiles.length && playAreaTiles[currentIndex].textContent !== '') {
-        currentWord.push(playAreaTiles[currentIndex].textContent);
-        currentIndex++;
-    }
-
-    return currentWord.join('');
-}
-
-function getVerticalWord(playAreaTiles, rowIndex, colIndex) {
-    const currentWord = [];
-    let currentIndex = rowIndex * 19 + colIndex;
-
-    while (currentIndex < playAreaTiles.length && playAreaTiles[currentIndex].textContent !== '') {
-        currentWord.push(playAreaTiles[currentIndex].textContent);
-        currentIndex += 19; // Move to the next column
-    }
-
-    return currentWord.join('');
-}
-
-function checkWordsInDictionary(words) {
-    const messageElement = document.getElementById('message');
-    messageElement.innerHTML = ''; // Clear any previous messages
-
-    words.forEach(word => {
-        if (word.length > 1) { // Check if the word has more than one letter
-            // Construct the API URL for checking the word
-            const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
-
-            // Send a GET request to the API
-            fetch(apiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    if (Array.isArray(data) && data.length > 0) {
-                        // The word exists in the dictionary
-                        messageElement.innerHTML += `"${word}" exists in the dictionary.<br>`;
-                    } else {
-                        // The word does not exist in the dictionary
-                        messageElement.innerHTML += `"${word}" does not exist in the dictionary.<br>`;
-                    }
-                })
-                .catch(error => {
-                    console.error(`Error checking "${word}" in the dictionary: ${error}`);
-                });
-        }
-    });
 };
 
-function getPrefixes(word) {
-    const prefixes = [];
-    for (let i = 1; i < word.length; i++) {
-        prefixes.push(word.slice(0, i));
+async function checkWord(wordToCheck) {
+    try {
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordToCheck}`);
+        const data = await response.json();
+
+        return data.length > 0; // Check if the API returned any results
+    } catch (error) {
+        console.error("Error checking word:", error);
+        return false;
     }
-    return prefixes;
-};
+}
+
+function checkWords(rowIndex, colIndex) {
+    // Check horizontally
+    let word = '';
+    let col = colIndex;
+    while (col >= 0 && playAreaGrid[rowIndex][col].letter !== '') {
+        word = playAreaGrid[rowIndex][col].letter + word;
+        col--;
+    }
+    col = colIndex + 1;
+    while (col < currentColumns && playAreaGrid[rowIndex][col].letter !== '') {
+        word = word + playAreaGrid[rowIndex][col].letter;
+        col++;
+    }
+    if (word.length > 1) {
+        wordsToCheck.push(word);
+    }
+
+    // Check vertically
+    word = '';
+    let row = rowIndex;
+    while (row >= 0 && playAreaGrid[row][colIndex].letter !== '') {
+        word = playAreaGrid[row][colIndex].letter + word;
+        row--;
+    }
+    row = rowIndex + 1;
+    while (row < currentRows && playAreaGrid[row][colIndex].letter !== '') {
+        word = word + playAreaGrid[row][colIndex].letter;
+        row++;
+    }
+    if (word.length > 1) {
+        wordsToCheck.push(word);
+    }
+}

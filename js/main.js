@@ -217,16 +217,26 @@ buildPlayArea(document.getElementById('play-area'));
 // Adding event listeners to the tiles in the player's hand, so we can move them to the play area
 const attachLetterTileEventListeners = () => {
     if (letterTileElements) {
-        let previousSelectedTile = null;
         letterTileElements.forEach((letterTile, index) => {
             letterTile.addEventListener('click', () => {
-                if (previousSelectedTile) {
-                    previousSelectedTile.style.backgroundColor = '';
+                // Check if the tile is already selected
+                const isSelected = letterTile.classList.contains('selected-tile');
+                
+                // Remove the class from all tiles
+                letterTileElements.forEach((tile) => {
+                    tile.classList.remove('selected-tile');
+                });
+                
+                if (!isSelected) {
+                    // If it's not selected, add the class
+                    letterTile.classList.add('selected-tile');
+                    selectedTile = letterTile.textContent;
+                    selectedTileIndex = index;
+                } else {
+                    // If it's already selected, clear the selection
+                    selectedTile = null;
+                    selectedTileIndex = null;
                 }
-                letterTile.style.backgroundColor = 'mediumseagreen';
-                selectedTile = letterTile.textContent;
-                selectedTileIndex = index;
-                previousSelectedTile = letterTile;
             });
         });
     }

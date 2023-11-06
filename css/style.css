@@ -190,3 +190,7 @@ h1 {
     background-color: yellowgreen;
     color: black;
 }
+
+.selected-tile {
+    background-color: mediumseagreen;
+}

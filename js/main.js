@@ -19,7 +19,7 @@ let currentColumns = 19; // Initial number of columns
 let currentRows = 22; // Initial number of rows
 let startTiles = [];
 const playAreaGrid = []; // 2D grid to represent the play area
-const wordsToCheck = []; // Array to store words in both directions
+let wordsToCheck = []; // Array to store words in both directions
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
@@ -33,6 +33,7 @@ document.getElementById('split').addEventListener('click', () => {
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
+    wordsToCheck = [];
 });
 
 document.getElementById('peel').addEventListener('click', () => {
@@ -88,6 +89,7 @@ document.getElementById('bananas').addEventListener('click', async () => {
         listItem.textContent = word + (isValidWord ? ' exists' : ' does not exist') + ' in the dictionary';
         messageElement.appendChild(listItem);
     }
+    console.log(wordsToCheck);
 });
 
 /*----- functions -----*/
@@ -185,6 +187,8 @@ const buildPlayArea = (element) => {
 
             // Clear the play area tile
             playAreaTile.textContent = '';
+
+            checkWords();
         }
     });
 });
@@ -254,8 +258,8 @@ emptyTiles.forEach((emptyTile, emptyTileIndex) => {
             playAreaGrid[rowIndex][colIndex].letter = selectedTile;
             emptyTile.textContent = selectedTile;
 
-            // Check for words in both horizontal and vertical directions
-            checkWords(rowIndex, colIndex);
+            // Call checkWords to add new words associated with the placed tile
+            checkWords(); // No need to specify false for the 'remove' parameter here
 
             if (selectedTileIndex !== null) {
                 // Remove the selected tile from the player's hand
@@ -401,36 +405,40 @@ async function checkWord(wordToCheck) {
     }
 }
 
-function checkWords(rowIndex, colIndex) {
+function checkWords() {
+    wordsToCheck.length = 0; // Clear the existing words
+
     // Check horizontally
-    let word = '';
-    let col = colIndex;
-    while (col >= 0 && playAreaGrid[rowIndex][col].letter !== '') {
-        word = playAreaGrid[rowIndex][col].letter + word;
-        col--;
-    }
-    col = colIndex + 1;
-    while (col < currentColumns && playAreaGrid[rowIndex][col].letter !== '') {
-        word = word + playAreaGrid[rowIndex][col].letter;
-        col++;
-    }
-    if (word.length > 1) {
-        wordsToCheck.push(word);
+    for (let rowIndex = 0; rowIndex < currentRows; rowIndex++) {
+        let word = '';
+        for (let colIndex = 0; colIndex < currentColumns; colIndex++) {
+            const letter = playAreaGrid[rowIndex][colIndex].letter;
+            if (letter !== '') {
+                word += letter;
+            } else if (word !== '') {
+                wordsToCheck.push(word);
+                word = '';
+            }
+        }
+        if (word !== '') {
+            wordsToCheck.push(word);
+        }
     }
 
     // Check vertically
-    word = '';
-    let row = rowIndex;
-    while (row >= 0 && playAreaGrid[row][colIndex].letter !== '') {
-        word = playAreaGrid[row][colIndex].letter + word;
-        row--;
-    }
-    row = rowIndex + 1;
-    while (row < currentRows && playAreaGrid[row][colIndex].letter !== '') {
-        word = word + playAreaGrid[row][colIndex].letter;
-        row++;
-    }
-    if (word.length > 1) {
-        wordsToCheck.push(word);
+    for (let colIndex = 0; colIndex < currentColumns; colIndex++) {
+        let word = '';
+        for (let rowIndex = 0; rowIndex < currentRows; rowIndex++) {
+            const letter = playAreaGrid[rowIndex][colIndex].letter;
+            if (letter !== '') {
+                word += letter;
+            } else if (word !== '') {
+                wordsToCheck.push(word);
+                word = '';
+            }
+        }
+        if (word !== '') {
+            wordsToCheck.push(word);
+        }
     }
 }

@@ -42,13 +42,14 @@ document.getElementById('split').addEventListener('click', () => {
     }
 
     buildOriginalTiles(); // Build the original tiles array
-    shuffleTiles(document.getElementById('original-tiles')); // Shuffle the tiles
+    shuffleOriginalTiles(document.getElementById('original-tiles')); // Shuffle the tiles
     split(shuffledTiles, 21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
     clearTilePlayArea(); // Clear the play area display
     checkWords(); // Recheck words
+    console.log(shuffledTiles);
     // Add code here to update the display based on the cleared `wordsToCheck`
     // ...
 });
@@ -341,19 +342,28 @@ function shuffleArray(array) {
     }
 }
 
-const shuffleTiles = (element) => {
-    html = '';
-    shuffledTiles.length = 0;
-    // make a varible called tiles that has the keys of the letters object and the value of the letters object is how many of that letter there are
-    for (let i = 0; i < originalTiles.length; i++) {
-        const randomIndex = Math.floor(Math.random() * originalTiles.length);
-        shuffledTiles.push(originalTiles[randomIndex]);
-        html += `<div class="tile-area">${originalTiles[randomIndex]}</div>`;
-    }
+// const shuffleTiles = (element) => {
+//     html = '';
+//     shuffledTiles.length = 0;
+//     // make a varible called tiles that has the keys of the letters object and the value of the letters object is how many of that letter there are
+//     for (let i = 0; i < originalTiles.length; i++) {
+//         const randomIndex = Math.floor(Math.random() * originalTiles.length);
+//         shuffledTiles.push(originalTiles[randomIndex]);
+//         html += `<div class="tile-area">${originalTiles[randomIndex]}</div>`;
+//     }
 
-    element.innerHTML = html;
-    return shuffledTiles;
-};
+//     element.innerHTML = html;
+//     return shuffledTiles;
+// };
+
+function shuffleOriginalTiles() {
+    shuffledTiles.length = 0;
+    const shuffledOriginalTiles = [...originalTiles]; // Make a copy of the originalTiles array to shuffle
+    for (let i = 0; i < originalTiles.length; i++) {
+        const randomIndex = Math.floor(Math.random() * shuffledOriginalTiles.length);
+        shuffledTiles.push(shuffledOriginalTiles.splice(randomIndex, 1)[0]);
+    }
+}
 
 // Function to handle the drag start event
 function handleDragStart(event) {
@@ -453,6 +463,9 @@ function handleDumpButtonClick() {
     const selectedTile = tileSelectionInput.value;
 
     if (selectedTile) {
+        // Add the selected tile back to the shuffledTiles array
+        shuffledTiles.push(selectedTile);
+
         // Remove the selected tile from the player's tiles visually
         const playerTiles = document.querySelectorAll('.player-tiles');
         let isValidTile = false;
@@ -467,6 +480,7 @@ function handleDumpButtonClick() {
 
         if (isValidTile) {
             // Remove the selected tile from the randomValues array
+            console.log('Tile that you are dumping', selectedTile);
             randomValues.splice(selectedTileIndex, 1);
 
             // Call the dump function to add 3 random tiles from #original-tiles
@@ -502,7 +516,7 @@ function openDumpModal() {
 
 
 function dump(element) {
-    // Check if there are at least 3 tiles in the original-tiles
+    // Check if there are at least 3 tiles in the originalTiles (shuffledTiles)
     if (shuffledTiles.length < 3) {
         alert("Not enough tiles in the original-tiles to perform a dump.");
         return;
@@ -511,15 +525,18 @@ function dump(element) {
     // Create a copy of randomValues without modifying the original array
     const randomValuesCopy = [...randomValues];
 
-    // Add the selected tile back to the original-tiles
-    shuffledTiles.push(selectedTile);
+    // Add the selected tile back to the shuffledTiles (shuffledTiles)
+    if (selectedTile) {
+        shuffledTiles.push(selectedTile);
+    }
 
-    // Take exactly 3 random tiles from the original-tiles
+    // Take exactly 3 random tiles from the shuffledTiles (shuffledTiles)
     const tilesTaken = [];
     for (let i = 0; i < 3; i++) {
         if (shuffledTiles.length > 0) {
             const randomIndex = Math.floor(Math.random() * shuffledTiles.length);
             const randomValue = shuffledTiles.splice(randomIndex, 1)[0];
+            console.log('Tile that we are taking from shuffledTiles into the players hand', randomValue)
             tilesTaken.push(randomValue);
             randomValues.push(randomValue);
         }
@@ -527,10 +544,10 @@ function dump(element) {
 
     // Update the original-tiles element with the updated tiles
     updateOriginalTiles(element);
+    console.log(shuffledTiles);
 
     // Update the player's tiles area
     updatePlayerTiles();
-    console.log(randomValues);
 
     if (tilesTaken.length < 3) {
         alert("Not enough tiles left in the original-tiles to complete the dump.");

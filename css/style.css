@@ -6,7 +6,7 @@ body {
 }
 
 .container {
-    display: grid;
+    /* display: grid; */
     grid-template-columns: 1fr 1.5fr 1fr;
 }
 
@@ -25,8 +25,9 @@ h1 {
     margin-top: 30px;
 }
 
+/* Might need for desktop version */
 .player-section h1 {
-    margin-left: 140px;
+    /* margin-left: 140px; */
 }
 
 .player-tiles {
@@ -45,8 +46,8 @@ h1 {
 
 .buttons {
     grid-column: 3;
-    margin-top: 103px;
-    height: 10%;
+    /* margin-top: 103px; */
+    /* height: 10%; */
 }
 
 .tiles-container {
@@ -61,6 +62,10 @@ h1 {
     grid-template-columns: repeat(19, 1fr);
     overflow: auto;
     justify-content: center;
+}
+
+#play-area.dragging {
+    overflow: hidden;
 }
 
 .play-area-row {
@@ -92,8 +97,9 @@ h1 {
     font-size: 30px;
 }
 
-.message-section {
+#message-section {
     height: 300px;
+    display: none;
     background-color: aliceblue;
     border-radius: 10px;
     max-width: 70%;
@@ -108,10 +114,11 @@ h1 {
 }
 
 .title-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    /* display: flex; */
+    /* justify-content: center; */
+    /* align-items: center; */
     margin-bottom: 10px;
+    text-align: center;
 }
 
 #randomize-tiles {

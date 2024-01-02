@@ -23,13 +23,23 @@ const wordsToCheck = []; // Array to store words in both directions
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
+const messageSection = document.getElementById('message-section');
 const randomizeButton = document.getElementById('randomize-tiles');
-
+const modal = document.getElementById("myModal");
+const btn = document.getElementById("dump");
+const span = document.getElementsByClassName("dump")[0];
 const playAreaElement = document.getElementById('play-area');
+letterTileElements = document.querySelectorAll('.player-tiles');
+//const letterTile = document.querySelectorAll('.player-tiles');
+
+document.addEventListener('dragenter', function(event) {
+  event.preventDefault();
+});
 
 // Add an event listener to prevent scroll during dragover
 playAreaElement.addEventListener('dragover', (event) => {
     event.preventDefault();
+    playAreaElement.style.touchAction = 'none';
 });
 
 /*----- event listeners -----*/
@@ -49,9 +59,6 @@ document.getElementById('split').addEventListener('click', () => {
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
     clearTilePlayArea(); // Clear the play area display
     checkWords(); // Recheck words
-    console.log(shuffledTiles);
-    // Add code here to update the display based on the cleared `wordsToCheck`
-    // ...
 });
 
 document.getElementById('peel').addEventListener('click', () => {
@@ -82,7 +89,8 @@ document.getElementById('randomize-tiles').addEventListener('click', () => {
 // });
 
 document.getElementById('bananas').addEventListener('click', async () => {
-    const messageElement = document.getElementById('message');
+console.log(messageSection);
+    messageSection.style.display = 'block';
     messageElement.innerHTML = '';
 
     // Create a set to store the unique words to check
@@ -273,6 +281,8 @@ const updatePlayerTiles = () => {
 
 const updateOriginalTiles = (element) => {
     const originalTilesElement = document.getElementById('original-tiles');
+    originalTilesElement.style.display = 'none';
+    // originalTilesElement.style.flexDirection = 'column';
     originalTilesElement.innerHTML = ''; // Clear the content
     
     shuffledTiles.forEach((value) => {
@@ -291,22 +301,20 @@ emptyTiles.forEach((emptyTile, emptyTileIndex) => {
 
             // Check if there's a letter in that position
             if (playAreaGrid[rowIndex][colIndex].letter === selectedTile) {
-                // Clear the playAreaGrid entry for the removed tile
+                // Update the `playAreaGrid` and `playAreaTile` content
                 playAreaGrid[rowIndex][colIndex].letter = '';
                 playAreaGrid[rowIndex][colIndex].direction = '';
-
-                // Remove the word associated with the removed tile from wordsToCheck
-                checkWords();
-
-                // Place the selected tile's letter on the grid
-                playAreaGrid[rowIndex][colIndex].letter = selectedTile;
                 emptyTile.textContent = selectedTile;
 
-                // Update the player's tiles on the screen
+                // Remove the letter from the player's tiles
                 randomValues.splice(selectedTileIndex, 1);
+
+                // Update the player's tiles on the screen
                 updatePlayerTiles();
-                selectedTileIndex = null;
                 selectedTile = null;
+
+                // After updating the play area, check the words again
+                checkWords();
             }
         }
     });
@@ -371,6 +379,7 @@ function handleDragStart(event) {
     event.dataTransfer.setData('text/plain', tile.textContent);
 
     tile.classList.add('selected-tile');
+    playAreaElement.classList.add('dragging');
 }
 
 // Function to handle the drag over event (to allow dropping)
@@ -410,7 +419,7 @@ function handleDrop(event) {
 
         // Check words after updating the grid
         checkWords();
-        
+        playAreaElement.classList.remove('dragging');
     }
 
 }
@@ -480,7 +489,6 @@ function handleDumpButtonClick() {
 
         if (isValidTile) {
             // Remove the selected tile from the randomValues array
-            console.log('Tile that you are dumping', selectedTile);
             randomValues.splice(selectedTileIndex, 1);
 
             // Call the dump function to add 3 random tiles from #original-tiles
@@ -522,9 +530,6 @@ function dump(element) {
         return;
     }
 
-    // Create a copy of randomValues without modifying the original array
-    const randomValuesCopy = [...randomValues];
-
     // Add the selected tile back to the shuffledTiles (shuffledTiles)
     if (selectedTile) {
         shuffledTiles.push(selectedTile);
@@ -536,7 +541,6 @@ function dump(element) {
         if (shuffledTiles.length > 0) {
             const randomIndex = Math.floor(Math.random() * shuffledTiles.length);
             const randomValue = shuffledTiles.splice(randomIndex, 1)[0];
-            console.log('Tile that we are taking from shuffledTiles into the players hand', randomValue)
             tilesTaken.push(randomValue);
             randomValues.push(randomValue);
         }
@@ -544,7 +548,6 @@ function dump(element) {
 
     // Update the original-tiles element with the updated tiles
     updateOriginalTiles(element);
-    console.log(shuffledTiles);
 
     // Update the player's tiles area
     updatePlayerTiles();
@@ -604,14 +607,44 @@ function checkWords() {
     }
 };
 
-// Get the modal
-const modal = document.getElementById("myModal");
+function updateWordsAfterTileRemoval() {
+    // Clear the `wordsToCheck` array
+    wordsToCheck.length = 0;
 
-// Get the button that opens the modal
-const btn = document.getElementById("dump");
+    // Check horizontally
+    for (let rowIndex = 0; rowIndex < currentRows; rowIndex++) {
+        let word = '';
+        for (let colIndex = 0; colIndex < currentColumns; colIndex++) {
+            const letter = playAreaGrid[rowIndex][colIndex].letter;
+            if (letter !== '') {
+                word += letter;
+            } else if (word !== '' && word.length > 1) {
+                wordsToCheck.push(word);
+                word = '';
+            }
+        }
+        if (word !== '' && word.length > 1) {
+            wordsToCheck.push(word);
+        }
+    }
 
-// Get the <span> element that closes the modal
-const span = document.getElementsByClassName("dump")[0];
+    // Check vertically
+    for (let colIndex = 0; colIndex < currentColumns; colIndex++) {
+        let word = '';
+        for (let rowIndex = 0; rowIndex < currentRows; rowIndex++) {
+            const letter = playAreaGrid[rowIndex][colIndex].letter;
+            if (letter !== '') {
+                word += letter;
+            } else if (word !== '' && word.length > 1) {
+                wordsToCheck.push(word);
+                word = '';
+            }
+        }
+        if (word !== '' && word.length > 1) {
+            wordsToCheck.push(word);
+        }
+    }
+};
 
 // When the user clicks on the button, open the modal
 btn.onclick = function() {
@@ -628,4 +661,7 @@ window.onclick = function(event) {
   if (event.target == modal) {
     modal.style.display = "none";
   }
-} 
+}
+
+// letterTile.addEventListener('dragstart', handleDragStart);
+// letterTile.addEventListener('dragend', handleDragOver);

@@ -13,11 +13,18 @@
 <body>
     <div class="container">
         <h1>Bananagrams</h1>
-        <section class="side-left">
-            <h1>Tile Area</h1>
+        <div class="buttons">
+            <button id="split">Split</button>
+            <button id="dump">Dump</button>
+            <button id="peel">Peel</button>
+            <button id="bananas">Bananas</button>
+            <!-- <button id="row">Add extra row</button>
+            <button id="column">Add extra column</button> -->
+        </div>
+        <div class="side-left">
+            <!-- <h1>Tile Area</h1> -->
             <div id="original-tiles" class="tiles-container"></div>
-        </section>
-    
+        </div>
         <main>
             <h1>Play Area</h1>
             <div id="play-area" class="tiles-container"></div>
@@ -33,28 +40,17 @@
             </div>
         </div>
 
-
-        <div class="buttons">
-            <button id="split">Split</button>
-            <button id="dump">Dump</button>
-            <button id="peel">Peel</button>
-            <button id="bananas">Bananas</button>
-            <button id="row">Add extra row</button>
-            <button id="column">Add extra column</button>
-
-            <section class="message-section">
-                <h1>Dictionary Check</h1>
-                <ul id="message"></ul>
-            </section>
-        </div>
-
         <section class="player-section">
             <span class="title-button">
                 <h1>Your Tiles</h1>
                 <button id="randomize-tiles">Randomize</button>
             </span>
             <div id="player-tiles" class="tiles-container"></div>
+        </section>
 
+        <section id="message-section">
+            <h1>Dictionary Check</h1>
+            <ul id="message"></ul>
         </section>
     </div>
 </body>

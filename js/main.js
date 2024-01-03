@@ -30,7 +30,6 @@ const btn = document.getElementById("dump");
 const span = document.getElementsByClassName("dump")[0];
 const playAreaElement = document.getElementById('play-area');
 letterTileElements = document.querySelectorAll('.player-tiles');
-//const letterTile = document.querySelectorAll('.player-tiles');
 
 document.addEventListener('dragenter', function(event) {
   event.preventDefault();
@@ -39,7 +38,7 @@ document.addEventListener('dragenter', function(event) {
 // Add an event listener to prevent scroll during dragover
 playAreaElement.addEventListener('dragover', (event) => {
     event.preventDefault();
-    playAreaElement.style.touchAction = 'none';
+    playAreaElement.classList.add('touch-action-none');
 });
 
 /*----- event listeners -----*/
@@ -58,6 +57,7 @@ document.getElementById('split').addEventListener('click', () => {
     attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
     clearTilePlayArea(); // Clear the play area display
+    messageSection.style.display = 'none'; // Hide the message section
     checkWords(); // Recheck words
 });
 
@@ -92,6 +92,7 @@ document.getElementById('bananas').addEventListener('click', async () => {
 console.log(messageSection);
     messageSection.style.display = 'block';
     messageElement.innerHTML = '';
+    console.log(wordsToCheck)
 
     // Create a set to store the unique words to check
     const uniqueWordsToCheck = new Set();
@@ -118,7 +119,6 @@ console.log(messageSection);
         listItem.textContent = word + (isValidWord ? ' exists' : ' does not exist') + ' in the dictionary';
         messageElement.appendChild(listItem);
     }
-    console.log(wordsToCheck);
 });
 
 /*----- functions -----*/
@@ -256,6 +256,9 @@ const attachLetterTileEventListeners = () => {
                     selectedTileIndex = null;
                 }
             });
+            letterTile.setAttribute('touch-action', 'none');
+            letterTile.addEventListener('touchstart', handleTouchStart);
+            letterTile.addEventListener('touchmove', handleTouchMove);
 
             // Enable drag and drop
             letterTile.setAttribute('draggable', true);
@@ -323,6 +326,9 @@ emptyTiles.forEach((emptyTile, emptyTileIndex) => {
     emptyTile.setAttribute('draggable', true);
     emptyTile.addEventListener('dragover', handleDragOver);
     emptyTile.addEventListener('drop', handleDrop);
+
+    emptyTile.addEventListener('touchmove', handleTouchMove);
+    emptyTile.addEventListener('touchend', handleTouchEnd);
 });
 
 
@@ -421,6 +427,70 @@ function handleDrop(event) {
         checkWords();
         playAreaElement.classList.remove('dragging');
     }
+}
+
+// Function to handle the touch start event
+function handleTouchStart(event) {
+    const touch = event.touches[0];
+    const tile = event.target;
+
+    // Store initial touch position
+    tile.dataset.initialX = touch.clientX;
+    tile.dataset.initialY = touch.clientY;
+
+    // Add a class to indicate that the tile is being dragged
+    tile.classList.add('selected-tile');
+}
+
+// Function to handle the touch move event
+function handleTouchMove(event) {
+    const touch = event.touches[0];
+    const tile = event.target;
+
+    // Calculate the change in touch position
+    const deltaX = touch.clientX - parseFloat(tile.dataset.initialX);
+    const deltaY = touch.clientY - parseFloat(tile.dataset.initialY);
+
+    // Set the tile position based on the touch movement
+    tile.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+}
+
+// Function to handle the touch end event
+function handleTouchEnd(event) {
+    event.preventDefault();
+    const tile = event.target;
+
+    if (tile.classList.contains('tile-play-area')) {
+        // Handle the drop (move tile to play area)
+        playAreaTile.textContent = tile;
+
+        // Find the position in the play area grid
+        const rowIndex = Math.floor(Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) / currentColumns);
+        const colIndex = Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) % currentColumns;
+
+        // Update the playAreaGrid
+        playAreaGrid[rowIndex][colIndex].letter = tile;
+        playAreaGrid[rowIndex][colIndex].direction = '';
+
+        // Remove the tile from the player's tiles visually and from the array
+        for (let i = 0; i < randomValues.length; i++) {
+            if (randomValues[i] === tile) {
+                randomValues.splice(i, 1);
+                break;
+            }
+        }
+
+        // Update the player's tiles on the screen
+        updatePlayerTiles();
+
+        // Check words after updating the grid
+        checkWords();
+        playAreaElement.classList.remove('dragging');
+    }
+
+    // Remove the drag-related styles and classes
+    tile.style.transform = '';
+    tile.classList.remove('selected-tile');
 
 }
 

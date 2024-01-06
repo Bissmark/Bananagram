@@ -31,12 +31,19 @@
         <div id="playerModal" class="modal">
             <div class="modal-content">
                 <span class="close" id="closePlayerModal">&times;</span>
-                <h2>Number of Players</h2>
-                <p>Enter the number of players (2 to 4):</p>
+                <h2>Game Setup</h2>
+                <p>Enter the number of players (2 to 4) and the Room ID:</p>
+                <label for="playerCountInput">Number of Players:</label>
                 <input type="number" id="playerCountInput" min="2" max="4" />
+                
+                <label for="roomIdInput">Room ID (for joining):</label>
+                <input type="text" id="roomIdInput" />
+
                 <button id="startGameBtn">Start Game</button>
+                <button id="joinGameBtn">Join Game</button>
             </div>
         </div>
+
 
         <div id="myModal" class="modal">
             <!-- Modal content -->

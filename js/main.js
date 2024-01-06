@@ -1,5 +1,5 @@
 /* Imports */
-import { ref, onValue, set, db } from './firebase.js';
+import { ref, onValue, set, db, auth, push } from './firebase.js';
 
 /* API stuff  */
 let wordToCheck;
@@ -25,6 +25,7 @@ let currentRows = 22; // Initial number of rows
 let startTiles = [];
 const playAreaGrid = []; // 2D grid to represent the play area
 const wordsToCheck = []; // Array to store words in both directions
+const user = auth.currentUser;
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
@@ -92,6 +93,17 @@ document.getElementById('randomize-tiles').addEventListener('click', () => {
 
 document.getElementById('closePlayerModal').addEventListener('click', () => {
     document.getElementById('playerModal').style.display = 'none';
+});
+
+document.getElementById('joinGameBtn').addEventListener('click', () => {
+    const roomId = document.getElementById('roomIdInput').value.trim();
+
+    if (roomId) {
+        joinGame(roomId);
+        document.getElementById('playerModal').style.display = 'none';
+    } else {
+        alert('Please enter a valid Room ID.');
+    }
 });
 
 // document.getElementById('row').addEventListener('click', () => {
@@ -180,6 +192,7 @@ const handleStartGame = () => {
     if (playerCount >= 2 && playerCount <= 4) {
         currentPlayer = 1; // Reset to player 1
         initializeGame();
+        createGame();
         document.getElementById('playerModal').style.display = 'none';
     } else {
         alert('Please select a valid number of players (2 to 4).');
@@ -814,5 +827,27 @@ window.onclick = function(event) {
   }
 }
 
-// letterTile.addEventListener('dragstart', handleDragStart);
-// letterTile.addEventListener('dragend', handleDragOver);
+const joinGame = (roomId) => {
+    const playerRef = ref(db, `gameRooms/${roomId}/players/${generateRandomPlayerId()}`);
+    set(playerRef, { tiles: [] }); // Initialize player data
+    console.log("Joined the game! Room ID:", roomId);
+}
+
+// Helper function to generate a random player ID
+const generateRandomPlayerId = () => {
+    // Implement your logic to generate a unique player ID
+    // For simplicity, you can use a random string or other methods
+    return Math.random().toString(36).substring(2, 15);
+}
+
+const createGame = () => {
+    const newGameRef = push(ref(db, 'gameRooms'));
+    const roomId = newGameRef.key;
+
+    // Initialize the game state (e.g., play area)
+    set(ref(db, `gameRooms/${roomId}/playArea`), { /* ... */ });
+
+    // Join the game as the first player
+    //joinGame(roomId);
+    console.log('Game created', roomId);
+}

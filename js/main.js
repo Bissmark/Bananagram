@@ -1,3 +1,6 @@
+/* Imports */
+import { ref, onValue, set, db } from './firebase.js';
+
 /* API stuff  */
 let wordToCheck;
 const word = `https://api.dictionaryapi.dev/api/v2/entries/en/${wordToCheck}`;
@@ -29,6 +32,9 @@ const modal = document.getElementById("myModal");
 const btn = document.getElementById("dump");
 const span = document.getElementsByClassName("dump")[0];
 const playAreaElement = document.getElementById('play-area');
+const playAreaRef = ref(db, 'gameRoom/playArea');
+const playerId = 'player1';
+const playerTilesRef = ref(db, `gameRoom/players/${playerId}`);
 letterTileElements = document.querySelectorAll('.player-tiles');
 
 document.addEventListener('dragenter', function(event) {
@@ -58,6 +64,7 @@ document.getElementById('split').addEventListener('click', () => {
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
     clearTilePlayArea(); // Clear the play area display
     messageSection.style.display = 'none'; // Hide the message section
+    initializePlayerTilesFirebase();
     checkWords(); // Recheck words
 });
 
@@ -256,9 +263,9 @@ const attachLetterTileEventListeners = () => {
                     selectedTileIndex = null;
                 }
             });
-            letterTile.setAttribute('touch-action', 'none');
-            letterTile.addEventListener('touchstart', handleTouchStart);
-            letterTile.addEventListener('touchmove', handleTouchMove);
+            //letterTile.setAttribute('touch-action', 'none');
+            //letterTile.addEventListener('touchstart', handleTouchStart);
+            //letterTile.addEventListener('touchmove', handleTouchMove);
 
             // Enable drag and drop
             letterTile.setAttribute('draggable', true);
@@ -267,19 +274,66 @@ const attachLetterTileEventListeners = () => {
     }
 }
 
+// const updatePlayArea = (playAreaData) => {
+//     playAreaData.forEach((tileData, rowIndex) => {
+//         tileData.forEach((tile, colIndex) => {
+//             const tileElement = document.querySelector(`.tile-play-area[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+
+//             if (tileElement) {
+//                 tileElement.textContent = tile.letter;
+//             } else {
+//                 // If the tile element doesn't exist, create it
+//                 const newTileElement = document.createElement('div');
+//                 newTileElement.className = 'tile-play-area';
+//                 newTileElement.textContent = tile.letter;
+//                 newTileElement.setAttribute('data-row', rowIndex);
+//                 newTileElement.setAttribute('data-col', colIndex);
+//                 playAreaElement.appendChild(newTileElement);
+//             }
+//         });
+//     });
+// }
+
+// onValue(playAreaRef, (snapshot) => {
+//     const playAreaData = snapshot.val();
+//     updatePlayArea(playAreaData);
+// });
+
+const updatePlayAreaInFirebase = (newPlayAreaData) => {
+    //const playAreaRef = ref(db, 'gameRoom/playArea');
+    set(playAreaRef, newPlayAreaData);
+}
+
+//const newPlayAreaData = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
+//updatePlayAreaInFirebase(newPlayAreaData);
+
 const updatePlayerTiles = () => {
     // Clear the player's hand
     const playerTilesElement = document.getElementById('player-tiles');
     playerTilesElement.innerHTML = '';
 
     // Rebuild the player's hand with the updated tiles
-    randomValues.forEach((tile, index) => {
-        playerTilesElement.innerHTML += `<div class="player-tiles" data-index="${index}">${tile}</div>`;
+    const updatedTiles = randomValues.map((tile, index) => {
+        const tileElement = document.createElement('div');
+        tileElement.className = 'player-tiles';
+        tileElement.setAttribute('data-index', index);
+        tileElement.textContent = tile;
+        playerTilesElement.appendChild(tileElement);
+        return tile;
     });
 
     // Reattach event listeners to the new tiles
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners();
+
+    return updatedTiles;
+}
+
+const initializePlayerTilesFirebase = () => {
+    const playerInitialTiles = updatePlayerTiles();
+    const playerTilesData = { tiles: playerInitialTiles };
+
+    set(playerTilesRef, playerTilesData);
 }
 
 const updateOriginalTiles = (element) => {
@@ -327,8 +381,8 @@ emptyTiles.forEach((emptyTile, emptyTileIndex) => {
     emptyTile.addEventListener('dragover', handleDragOver);
     emptyTile.addEventListener('drop', handleDrop);
 
-    emptyTile.addEventListener('touchmove', handleTouchMove);
-    emptyTile.addEventListener('touchend', handleTouchEnd);
+    //emptyTile.addEventListener('touchmove', handleTouchMove);
+    //emptyTile.addEventListener('touchend', handleTouchEnd);
 });
 
 
@@ -394,6 +448,7 @@ function handleDragOver(event) {
 }
 
 // Function to handle the drop event
+// Function to handle the drop event
 function handleDrop(event) {
     event.preventDefault();
     const tile = event.dataTransfer.getData('text/plain');
@@ -426,73 +481,75 @@ function handleDrop(event) {
         // Check words after updating the grid
         checkWords();
         playAreaElement.classList.remove('dragging');
+
+        updatePlayAreaInFirebase(playAreaGrid); // Update play area in Firebase
     }
 }
 
 // Function to handle the touch start event
-function handleTouchStart(event) {
-    const touch = event.touches[0];
-    const tile = event.target;
+// function handleTouchStart(event) {
+//     const touch = event.touches[0];
+//     const tile = event.target;
 
-    // Store initial touch position
-    tile.dataset.initialX = touch.clientX;
-    tile.dataset.initialY = touch.clientY;
+//     // Store initial touch position
+//     tile.dataset.initialX = touch.clientX;
+//     tile.dataset.initialY = touch.clientY;
 
-    // Add a class to indicate that the tile is being dragged
-    tile.classList.add('selected-tile');
-}
+//     // Add a class to indicate that the tile is being dragged
+//     tile.classList.add('selected-tile');
+// }
 
-// Function to handle the touch move event
-function handleTouchMove(event) {
-    const touch = event.touches[0];
-    const tile = event.target;
+// // Function to handle the touch move event
+// function handleTouchMove(event) {
+//     const touch = event.touches[0];
+//     const tile = event.target;
 
-    // Calculate the change in touch position
-    const deltaX = touch.clientX - parseFloat(tile.dataset.initialX);
-    const deltaY = touch.clientY - parseFloat(tile.dataset.initialY);
+//     // Calculate the change in touch position
+//     const deltaX = touch.clientX - parseFloat(tile.dataset.initialX);
+//     const deltaY = touch.clientY - parseFloat(tile.dataset.initialY);
 
-    // Set the tile position based on the touch movement
-    tile.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-}
+//     // Set the tile position based on the touch movement
+//     tile.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+// }
 
-// Function to handle the touch end event
-function handleTouchEnd(event) {
-    event.preventDefault();
-    const tile = event.target;
+// // Function to handle the touch end event
+// function handleTouchEnd(event) {
+//     event.preventDefault();
+//     const tile = event.target;
 
-    if (tile.classList.contains('tile-play-area')) {
-        // Handle the drop (move tile to play area)
-        playAreaTile.textContent = tile;
+//     if (tile.classList.contains('tile-play-area')) {
+//         // Handle the drop (move tile to play area)
+//         playAreaTile.textContent = tile;
 
-        // Find the position in the play area grid
-        const rowIndex = Math.floor(Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) / currentColumns);
-        const colIndex = Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) % currentColumns;
+//         // Find the position in the play area grid
+//         const rowIndex = Math.floor(Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) / currentColumns);
+//         const colIndex = Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) % currentColumns;
 
-        // Update the playAreaGrid
-        playAreaGrid[rowIndex][colIndex].letter = tile;
-        playAreaGrid[rowIndex][colIndex].direction = '';
+//         // Update the playAreaGrid
+//         playAreaGrid[rowIndex][colIndex].letter = tile;
+//         playAreaGrid[rowIndex][colIndex].direction = '';
 
-        // Remove the tile from the player's tiles visually and from the array
-        for (let i = 0; i < randomValues.length; i++) {
-            if (randomValues[i] === tile) {
-                randomValues.splice(i, 1);
-                break;
-            }
-        }
+//         // Remove the tile from the player's tiles visually and from the array
+//         for (let i = 0; i < randomValues.length; i++) {
+//             if (randomValues[i] === tile) {
+//                 randomValues.splice(i, 1);
+//                 break;
+//             }
+//         }
 
-        // Update the player's tiles on the screen
-        updatePlayerTiles();
+//         // Update the player's tiles on the screen
+//         updatePlayerTiles();
 
-        // Check words after updating the grid
-        checkWords();
-        playAreaElement.classList.remove('dragging');
-    }
+//         // Check words after updating the grid
+//         checkWords();
+//         playAreaElement.classList.remove('dragging');
+//     }
 
-    // Remove the drag-related styles and classes
-    tile.style.transform = '';
-    tile.classList.remove('selected-tile');
+//     // Remove the drag-related styles and classes
+//     tile.style.transform = '';
+//     tile.classList.remove('selected-tile');
 
-}
+// }
 
 function split(array, count, element) {
     wordsToCheck.length = 0; // Clear the existing words
@@ -519,7 +576,7 @@ function split(array, count, element) {
     return randomValues;
 };
 
-function peel(element) {
+const peel = (element) => {
     htmlPlayer = '';
 
     // Get 1 random tile

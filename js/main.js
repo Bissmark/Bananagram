@@ -18,6 +18,8 @@ let htmlPlayer = '';
 let selectedTile = null;
 let selectedTileIndex = null;
 let letterTileElements;
+let playerCount;
+let currentPlayer = 1;
 let currentColumns = 19; // Initial number of columns
 let currentRows = 22; // Initial number of rows
 let startTiles = [];
@@ -33,8 +35,9 @@ const btn = document.getElementById("dump");
 const span = document.getElementsByClassName("dump")[0];
 const playAreaElement = document.getElementById('play-area');
 const playAreaRef = ref(db, 'gameRoom/playArea');
-const playerId = 'player1';
-const playerTilesRef = ref(db, `gameRoom/players/${playerId}`);
+const playersRef = ref(db, 'gameRoom/players');
+const currentPlayerId = `player${currentPlayer}`;
+// const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
 letterTileElements = document.querySelectorAll('.player-tiles');
 
 document.addEventListener('dragenter', function(event) {
@@ -85,7 +88,11 @@ document.getElementById('dump').addEventListener('click', () => {
 
 document.getElementById('randomize-tiles').addEventListener('click', () => {
     randomizePlayerTiles(); // Randomize the player's tiles
-})
+});
+
+document.getElementById('closePlayerModal').addEventListener('click', () => {
+    document.getElementById('playerModal').style.display = 'none';
+});
 
 // document.getElementById('row').addEventListener('click', () => {
 //     addRow();
@@ -138,6 +145,54 @@ function buildOriginalTiles() {
     }
     return originalTiles;
 };
+
+const initializeGame = () => {
+    // Code to initialize game state
+    buildPlayArea(document.getElementById('play-area')); // Create the play area
+
+    // Other initialization tasks...
+    
+    // Split tiles and populate player tiles
+    //split(shuffledTiles, 21, document.getElementById('player-tiles'));
+
+    // Attach event listeners
+    attachLetterTileEventListeners();
+
+    // Enable the "Randomize" button
+    randomizeButton.style.visibility = 'visible';
+
+    // Clear the play area display
+    clearTilePlayArea();
+
+    // Hide the message section
+    messageSection.style.display = 'none';
+
+    // Initialize player tiles in Firebase
+    initializePlayerTilesFirebase();
+
+    // Check words
+    checkWords();
+};
+
+const handleStartGame = () => {
+    playerCount = parseInt(document.getElementById('playerCountInput').value, 10);
+
+    if (playerCount >= 2 && playerCount <= 4) {
+        currentPlayer = 1; // Reset to player 1
+        initializeGame();
+        document.getElementById('playerModal').style.display = 'none';
+    } else {
+        alert('Please select a valid number of players (2 to 4).');
+    }
+}
+
+// Add event listener for the start game button
+document.getElementById('startGameBtn').addEventListener('click', handleStartGame);
+
+// Show the player count modal when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('playerModal').style.display = 'block';
+});
 
 // function addColumn() {
 //     // Increment the number of columns
@@ -254,7 +309,6 @@ const attachLetterTileEventListeners = () => {
                 
                 if (!isSelected) {
                     // If it's not selected, add the class
-                    //letterTile.classList.add('selected-tile');
                     selectedTile = letterTile.textContent;
                     selectedTileIndex = index;
                 } else {
@@ -263,49 +317,18 @@ const attachLetterTileEventListeners = () => {
                     selectedTileIndex = null;
                 }
             });
-            //letterTile.setAttribute('touch-action', 'none');
-            //letterTile.addEventListener('touchstart', handleTouchStart);
-            //letterTile.addEventListener('touchmove', handleTouchMove);
 
             // Enable drag and drop
             letterTile.setAttribute('draggable', true);
             letterTile.addEventListener('dragstart', handleDragStart);
         });
     }
-}
-
-// const updatePlayArea = (playAreaData) => {
-//     playAreaData.forEach((tileData, rowIndex) => {
-//         tileData.forEach((tile, colIndex) => {
-//             const tileElement = document.querySelector(`.tile-play-area[data-row="${rowIndex}"][data-col="${colIndex}"]`);
-
-//             if (tileElement) {
-//                 tileElement.textContent = tile.letter;
-//             } else {
-//                 // If the tile element doesn't exist, create it
-//                 const newTileElement = document.createElement('div');
-//                 newTileElement.className = 'tile-play-area';
-//                 newTileElement.textContent = tile.letter;
-//                 newTileElement.setAttribute('data-row', rowIndex);
-//                 newTileElement.setAttribute('data-col', colIndex);
-//                 playAreaElement.appendChild(newTileElement);
-//             }
-//         });
-//     });
-// }
-
-// onValue(playAreaRef, (snapshot) => {
-//     const playAreaData = snapshot.val();
-//     updatePlayArea(playAreaData);
-// });
+};
 
 const updatePlayAreaInFirebase = (newPlayAreaData) => {
     //const playAreaRef = ref(db, 'gameRoom/playArea');
     set(playAreaRef, newPlayAreaData);
 }
-
-//const newPlayAreaData = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
-//updatePlayAreaInFirebase(newPlayAreaData);
 
 const updatePlayerTiles = () => {
     // Clear the player's hand
@@ -333,6 +356,7 @@ const initializePlayerTilesFirebase = () => {
     const playerInitialTiles = updatePlayerTiles();
     const playerTilesData = { tiles: playerInitialTiles };
 
+    const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
     set(playerTilesRef, playerTilesData);
 }
 

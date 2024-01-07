@@ -62,7 +62,7 @@ document.getElementById('split').addEventListener('click', () => {
 
     buildOriginalTiles(); // Build the original tiles array
     shuffleOriginalTiles(document.getElementById('original-tiles')); // Shuffle the tiles
-    split(shuffledTiles, 21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
+    split(21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
@@ -588,30 +588,44 @@ function handleDrop(event) {
 
 // }
 
-function split(array, count, element) {
+async function split(count, element) {
     wordsToCheck.length = 0; // Clear the existing words
     randomValues.length = 0;
     html = '';
     htmlPlayer = '';
     messageElement.innerHTML = ''; // Clear the message area
     clearTilePlayArea(); // Clear the play area
-    const startTilesCopy = [...array]; // Create a copy of the original array to avoid modifying it
-    
-    // Get 21 random values
-    for (let i = 0; i < count; i++) {
-        const randomIndex = Math.floor(Math.random() * startTilesCopy.length);
-        const randomValue = startTilesCopy.splice(randomIndex, 1)[0]; // Remove the selected value from the array
-        randomValues.push(randomValue);
-        shuffledTiles.splice(randomIndex, 1);
-        htmlPlayer += `<div class="player-tiles" data-index="${randomIndex}">${randomValue}</div>`;
+
+    // Get the number of players in the room from Firebase
+    const playersSnapshot = await get(playersRef);
+    const numberOfPlayers = playersSnapshot.size;
+
+    // Calculate the number of tiles each player should receive
+    const tilesPerPlayer = count / numberOfPlayers;
+
+    // Get tiles for each player
+    for (let i = 0; i < numberOfPlayers; i++) {
+        const playerTiles = [];
+        
+        for (let j = 0; j < tilesPerPlayer; j++) {
+            const randomIndex = Math.floor(Math.random() * shuffledTiles.length);
+            const randomValue = shuffledTiles.splice(randomIndex, 1)[0];
+            playerTiles.push(randomValue);
+            randomValues.push(randomValue);
+            htmlPlayer += `<div class="player-tiles" data-index="${randomIndex}">${randomValue}</div>`;
+        }
+
+        // Update the player's tiles in Firebase
+        const currentPlayerId = `player${i + 1}`;
+        const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
+        set(playerTilesRef, { tiles: playerTiles });
     }
 
-    //  Update the original-tiles element with the 21 random tiles
+    // Update the original-tiles element with the updated tiles
     updateOriginalTiles(element);
-    startTiles = startTilesCopy; // Restore the original array
-    
+
     return randomValues;
-};
+}
 
 const peel = (element) => {
     htmlPlayer = '';

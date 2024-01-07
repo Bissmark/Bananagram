@@ -1,5 +1,5 @@
 /* Imports */
-import { ref, onValue, set, db, auth, push } from './firebase.js';
+import { ref, onValue, set, get, db, auth, push } from './firebase.js';
 
 /* API stuff  */
 let wordToCheck;
@@ -827,27 +827,30 @@ window.onclick = function(event) {
   }
 }
 
-const joinGame = (roomId) => {
-    const playerRef = ref(db, `gameRooms/${roomId}/players/${generateRandomPlayerId()}`);
-    set(playerRef, { tiles: [] }); // Initialize player data
-    console.log("Joined the game! Room ID:", roomId);
-}
-
-// Helper function to generate a random player ID
-const generateRandomPlayerId = () => {
-    // Implement your logic to generate a unique player ID
-    // For simplicity, you can use a random string or other methods
-    return Math.random().toString(36).substring(2, 15);
+const joinGame = (roomId, playerId) => {
+    const roomRef = ref(db, `gameRooms/${roomId}`);
+    get(roomRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const playerRef = ref(db, `gameRooms/${roomId}/players/${playerId}`);
+            set(playerRef, { tiles: [] }); // Initialize player data
+            console.log(`Joined game room: ${roomId}`);
+        } else {
+            alert('Invalid Room ID. Please enter a valid Room ID.');
+        }
+    });
 }
 
 const createGame = () => {
     const newGameRef = push(ref(db, 'gameRooms'));
     const roomId = newGameRef.key;
-
+    
     // Initialize the game state (e.g., play area)
     set(ref(db, `gameRooms/${roomId}/playArea`), { /* ... */ });
 
+    set(ref(db, `gameRooms/${roomId}`), { roomId });
+
     // Join the game as the first player
-    //joinGame(roomId);
+    const playerId = 'player1'; // Replace with your preferred identifier logic
     console.log('Game created', roomId);
+    joinGame(roomId, playerId);
 }

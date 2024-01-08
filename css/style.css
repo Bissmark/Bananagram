@@ -71,10 +71,6 @@ h1 {
     overflow: hidden;
 }
 
-#play-area.touch-action-none {
-    touch-action: none;
-}
-
 .play-area-row {
     display: flex;
     height: 52px; /* Adjust this height to match the height of your tiles including margins */

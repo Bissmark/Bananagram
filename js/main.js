@@ -1,9 +1,5 @@
 /* Imports */
-import { ref, onValue, set, get, db, auth, push } from './firebase.js';
-
-/* API stuff  */
-let wordToCheck;
-const word = `https://api.dictionaryapi.dev/api/v2/entries/en/${wordToCheck}`;
+import { ref, set, get, db, push } from './firebase.js';
 
 /*----- constants -----*/
 const letters = {'a': 13, 'b': 3, 'c': 3, 'd': 6, 'e': 18, 'f': 3, 'g': 4, 'h': 3, 'i': 12, 'j': 2, 'k': 2, 'l': 5, 'm': 3, 'n': 8, 'o': 11, 'p': 3, 'q': 2, 'r': 9, 's': 6, 't': 9, 'u': 6, 'v': 3, 'w': 3, 'y': 3, 'z': 2
@@ -25,7 +21,6 @@ let currentRows = 22; // Initial number of rows
 let startTiles = [];
 const playAreaGrid = []; // 2D grid to represent the play area
 const wordsToCheck = []; // Array to store words in both directions
-const user = auth.currentUser;
 
 /*----- cached elements  -----*/
 const messageElement = document.getElementById('message');
@@ -36,19 +31,17 @@ const btn = document.getElementById("dump");
 const span = document.getElementsByClassName("dump")[0];
 const playAreaElement = document.getElementById('play-area');
 const playAreaRef = ref(db, 'gameRoom/playArea');
-const playersRef = ref(db, 'gameRoom/players');
-const currentPlayerId = `player${currentPlayer}`;
-// const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
+const playerId = `player${currentPlayer}`;
+const playerTilesRef = ref(db, `gameRoom/players/${playerId}`);
+const newGameRef = push(ref(db, 'gameRooms'));
+const roomId = newGameRef.key;
 letterTileElements = document.querySelectorAll('.player-tiles');
 
-document.addEventListener('dragenter', function(event) {
-  event.preventDefault();
-});
+// can delete
 
 // Add an event listener to prevent scroll during dragover
 playAreaElement.addEventListener('dragover', (event) => {
     event.preventDefault();
-    playAreaElement.classList.add('touch-action-none');
 });
 
 /*----- event listeners -----*/
@@ -62,7 +55,7 @@ document.getElementById('split').addEventListener('click', () => {
 
     buildOriginalTiles(); // Build the original tiles array
     shuffleOriginalTiles(document.getElementById('original-tiles')); // Shuffle the tiles
-    split(21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
+    split(shuffledTiles, 21, document.getElementById('player-tiles')); // Put 21 tiles into the players hand
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners(); // Attach event listeners to the tiles in the player's hand
     randomizeButton.style.visibility = 'visible'; // Enable the "Randomize" button
@@ -79,7 +72,6 @@ document.getElementById('peel').addEventListener('click', () => {
 });
 
 document.getElementById('dump').addEventListener('click', () => {
-    //dump(document.getElementById('player-tiles')); // Take 3 tiles from the tile area and put them into the player's hand, then return 1 tile to the tile area
     openDumpModal();
     letterTileElements = document.querySelectorAll('.player-tiles');
     attachLetterTileEventListeners();
@@ -106,19 +98,9 @@ document.getElementById('joinGameBtn').addEventListener('click', () => {
     }
 });
 
-// document.getElementById('row').addEventListener('click', () => {
-//     addRow();
-// });
-
-// document.getElementById('column').addEventListener('click', () => {
-//     addColumn();
-// });
-
 document.getElementById('bananas').addEventListener('click', async () => {
-console.log(messageSection);
     messageSection.style.display = 'block';
     messageElement.innerHTML = '';
-    console.log(wordsToCheck)
 
     // Create a set to store the unique words to check
     const uniqueWordsToCheck = new Set();
@@ -158,17 +140,14 @@ function buildOriginalTiles() {
     return originalTiles;
 };
 
+
+
 const initializeGame = () => {
     // Code to initialize game state
-    buildPlayArea(document.getElementById('play-area')); // Create the play area
-
-    // Other initialization tasks...
-    
-    // Split tiles and populate player tiles
-    //split(shuffledTiles, 21, document.getElementById('player-tiles'));
+    // buildPlayArea(document.getElementById('play-area')); // Create the play area
 
     // Attach event listeners
-    attachLetterTileEventListeners();
+    //attachLetterTileEventListeners();
 
     // Enable the "Randomize" button
     randomizeButton.style.visibility = 'visible';
@@ -186,18 +165,45 @@ const initializeGame = () => {
     checkWords();
 };
 
-const handleStartGame = () => {
+const handleStartGame = async () => {
     playerCount = parseInt(document.getElementById('playerCountInput').value, 10);
 
     if (playerCount >= 2 && playerCount <= 4) {
         currentPlayer = 1; // Reset to player 1
-        initializeGame();
-        createGame();
-        document.getElementById('playerModal').style.display = 'none';
+
+        // Create the game and get player ID and room ID
+        const { playerId, roomId } = await createGame();
+
+        // Wait for all players to join
+        const playersJoined = await waitForPlayersToJoin(roomId, playerCount);
+
+        if (playersJoined) {
+            initializeGame();
+            document.getElementById('playerModal').style.display = 'none';
+        } else {
+            alert('Not all players have joined the room.');
+        }
     } else {
         alert('Please select a valid number of players (2 to 4).');
     }
-}
+};
+
+const waitForPlayersToJoin = async (roomId, expectedPlayerCount) => {
+    return new Promise((resolve) => {
+        const intervalId = setInterval(() => {
+            const playersRef = ref(db, `gameRooms/${roomId}/players`);
+            get(playersRef).then((snapshot) => {
+                const players = snapshot.val();
+                const joinedPlayerCount = players ? Object.keys(players).length : 0;
+                console.log(joinedPlayerCount)
+                if (joinedPlayerCount === expectedPlayerCount) {
+                    clearInterval(intervalId);
+                    resolve(true);
+                }
+            });
+        }, 1000); // Check every second
+    });
+};
 
 // Add event listener for the start game button
 document.getElementById('startGameBtn').addEventListener('click', handleStartGame);
@@ -206,50 +212,6 @@ document.getElementById('startGameBtn').addEventListener('click', handleStartGam
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('playerModal').style.display = 'block';
 });
-
-// function addColumn() {
-//     // Increment the number of columns
-//     currentColumns += 1;
-
-//     // Find the play area
-//     const playArea = document.getElementById('play-area');
-//     const playAreaRows = playArea.querySelectorAll('.play-area-row');
-
-//     // Add cells to each row
-//     playAreaRows.forEach(row => {
-//         const newCell = document.createElement('div');
-//         newCell.className = 'tile-play-area';
-//         row.appendChild(newCell);
-//     });
-
-//     // Clear the play area
-//     clearTilePlayArea();
-// };
-
-// function addRow() {
-//     // Increment the number of rows
-//     currentRows += 1;
-
-//     // Find the play area
-//     const playArea = document.getElementById('play-area');
-
-//     // Create a new row
-//     const newRow = document.createElement('div');
-//     newRow.className = 'play-area-row';
-
-//     // Add cells to the new row for the entire row
-//     for (let j = 0; j < currentColumns; j++) {
-//         const newCell = document.createElement('div');
-//         newCell.className = 'tile-play-area';
-//         newRow.appendChild(newCell);
-//     }
-
-//     // Append the new row to the top of the play area
-//     playArea.insertBefore(newRow, playArea.firstChild);
-
-//     // Clear the play area
-//     clearTilePlayArea();
-// }
 
 const buildPlayArea = (element) => {
     const currentColumns = 19; // Assuming 19 columns initially
@@ -314,8 +276,7 @@ const attachLetterTileEventListeners = () => {
             letterTile.addEventListener('click', () => {
                 // Check if the tile is already selected
                 const isSelected = letterTile.classList.contains('selected-tile');
-                
-                // Remove the class from all tiles
+
                 letterTileElements.forEach((tile) => {
                     //tile.classList.remove('selected-tile');
                 });
@@ -334,6 +295,7 @@ const attachLetterTileEventListeners = () => {
             // Enable drag and drop
             letterTile.setAttribute('draggable', true);
             letterTile.addEventListener('dragstart', handleDragStart);
+            
         });
     }
 };
@@ -369,17 +331,16 @@ const initializePlayerTilesFirebase = () => {
     const playerInitialTiles = updatePlayerTiles();
     const playerTilesData = { tiles: playerInitialTiles };
 
-    const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
+    //const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
     set(playerTilesRef, playerTilesData);
 }
 
 const updateOriginalTiles = (element) => {
     const originalTilesElement = document.getElementById('original-tiles');
     originalTilesElement.style.display = 'none';
-    // originalTilesElement.style.flexDirection = 'column';
     originalTilesElement.innerHTML = ''; // Clear the content
     
-    shuffledTiles.forEach((value) => {
+    shuffledTiles.forEach(() => {
         originalTilesElement.innerHTML += `<div class="tile-area"></div>`;
     });
     element.innerHTML = htmlPlayer;
@@ -422,8 +383,6 @@ emptyTiles.forEach((emptyTile, emptyTileIndex) => {
     //emptyTile.addEventListener('touchend', handleTouchEnd);
 });
 
-
-
 function randomizePlayerTiles() {
     const playerTilesElement = document.getElementById('player-tiles');
     const playerTiles = Array.from(playerTilesElement.querySelectorAll('.player-tiles'));
@@ -446,20 +405,6 @@ function shuffleArray(array) {
         [array[i], array[j]] = [array[j], array[i]]; // Swap elements
     }
 }
-
-// const shuffleTiles = (element) => {
-//     html = '';
-//     shuffledTiles.length = 0;
-//     // make a varible called tiles that has the keys of the letters object and the value of the letters object is how many of that letter there are
-//     for (let i = 0; i < originalTiles.length; i++) {
-//         const randomIndex = Math.floor(Math.random() * originalTiles.length);
-//         shuffledTiles.push(originalTiles[randomIndex]);
-//         html += `<div class="tile-area">${originalTiles[randomIndex]}</div>`;
-//     }
-
-//     element.innerHTML = html;
-//     return shuffledTiles;
-// };
 
 function shuffleOriginalTiles() {
     shuffledTiles.length = 0;
@@ -485,14 +430,15 @@ function handleDragOver(event) {
 }
 
 // Function to handle the drop event
-// Function to handle the drop event
 function handleDrop(event) {
     event.preventDefault();
     const tile = event.dataTransfer.getData('text/plain');
     const playAreaTile = event.target;
 
+
     // Check if the drop target is a valid play area tile
     if (playAreaTile.classList.contains('tile-play-area')) {
+
         // Handle the drop (move tile to play area)
         playAreaTile.textContent = tile;
 
@@ -517,115 +463,80 @@ function handleDrop(event) {
 
         // Check words after updating the grid
         checkWords();
+
+        // console.log('Tile dropped successfully');
+
+        // Uncomment the line below if you want to keep the dragging class removed
         playAreaElement.classList.remove('dragging');
 
-        updatePlayAreaInFirebase(playAreaGrid); // Update play area in Firebase
+        // Uncomment the line below if you want to update the play area in Firebase
+        updatePlayAreaInFirebase(playAreaGrid);
     }
 }
 
-// Function to handle the touch start event
-// function handleTouchStart(event) {
-//     const touch = event.touches[0];
-//     const tile = event.target;
+// async function split(array, count, element) {
+//     wordsToCheck.length = 0; // Clear the existing words
+//     randomValues.length = 0;
+//     html = '';
+//     htmlPlayer = '';
+//     messageElement.innerHTML = ''; // Clear the message area
+//     clearTilePlayArea(); // Clear the play area
 
-//     // Store initial touch position
-//     tile.dataset.initialX = touch.clientX;
-//     tile.dataset.initialY = touch.clientY;
+//     const startTilesCopy = [...array]; // Create a copy of the original array to avoid modifying it
+    
+//     try {
+//         const playersSnapshot = await get(playersRef);
+//         const numPlayers = playersSnapshot.val();
 
-//     // Add a class to indicate that the tile is being dragged
-//     tile.classList.add('selected-tile');
-// }
+//         for (let i = 0; i <= numPlayers; i++) {
+//             const playerTiles = [];
 
-// // Function to handle the touch move event
-// function handleTouchMove(event) {
-//     const touch = event.touches[0];
-//     const tile = event.target;
-
-//     // Calculate the change in touch position
-//     const deltaX = touch.clientX - parseFloat(tile.dataset.initialX);
-//     const deltaY = touch.clientY - parseFloat(tile.dataset.initialY);
-
-//     // Set the tile position based on the touch movement
-//     tile.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-// }
-
-// // Function to handle the touch end event
-// function handleTouchEnd(event) {
-//     event.preventDefault();
-//     const tile = event.target;
-
-//     if (tile.classList.contains('tile-play-area')) {
-//         // Handle the drop (move tile to play area)
-//         playAreaTile.textContent = tile;
-
-//         // Find the position in the play area grid
-//         const rowIndex = Math.floor(Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) / currentColumns);
-//         const colIndex = Array.from(playAreaTile.parentNode.children).indexOf(playAreaTile) % currentColumns;
-
-//         // Update the playAreaGrid
-//         playAreaGrid[rowIndex][colIndex].letter = tile;
-//         playAreaGrid[rowIndex][colIndex].direction = '';
-
-//         // Remove the tile from the player's tiles visually and from the array
-//         for (let i = 0; i < randomValues.length; i++) {
-//             if (randomValues[i] === tile) {
-//                 randomValues.splice(i, 1);
-//                 break;
+//             for (let j = 0; j < count; j++) {
+//                 const randomIndex = Math.floor(Math.random() * startTilesCopy.length);
+//                 const randomValue = startTilesCopy.splice(randomIndex, 1)[0]; // Remove the selected value from the array
+//                 randomValues.push(randomValue);
+//                 shuffledTiles.splice(randomIndex, 1);
+//                 htmlPlayer += `<div class="player-tiles" data-index="${randomIndex}">${randomValue}</div>`;
 //             }
-//         }
 
-//         // Update the player's tiles on the screen
-//         updatePlayerTiles();
-
-//         // Check words after updating the grid
-//         checkWords();
-//         playAreaElement.classList.remove('dragging');
+//         const currentPlayerId = `player${i + 1}`;
+//         const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
+//         set(playerTilesRef, { tiles: playerTiles }); // Initialize player data
+//         } 
+//         updateOriginalTiles(element);
+//         startTiles = startTilesCopy; // Restore the original array
+        
+//         return randomValues;
+//     }   catch (error) {
+//             console.error('Error splitting tiles:', error);
+//             throw error;
 //     }
+// };
 
-//     // Remove the drag-related styles and classes
-//     tile.style.transform = '';
-//     tile.classList.remove('selected-tile');
-
-// }
-
-async function split(count, element) {
+function split(array, count, element) {
     wordsToCheck.length = 0; // Clear the existing words
     randomValues.length = 0;
     html = '';
     htmlPlayer = '';
     messageElement.innerHTML = ''; // Clear the message area
     clearTilePlayArea(); // Clear the play area
-
-    // Get the number of players in the room from Firebase
-    const playersSnapshot = await get(playersRef);
-    const numberOfPlayers = playersSnapshot.size;
-
-    // Calculate the number of tiles each player should receive
-    const tilesPerPlayer = count / numberOfPlayers;
-
-    // Get tiles for each player
-    for (let i = 0; i < numberOfPlayers; i++) {
-        const playerTiles = [];
-        
-        for (let j = 0; j < tilesPerPlayer; j++) {
-            const randomIndex = Math.floor(Math.random() * shuffledTiles.length);
-            const randomValue = shuffledTiles.splice(randomIndex, 1)[0];
-            playerTiles.push(randomValue);
-            randomValues.push(randomValue);
-            htmlPlayer += `<div class="player-tiles" data-index="${randomIndex}">${randomValue}</div>`;
-        }
-
-        // Update the player's tiles in Firebase
-        const currentPlayerId = `player${i + 1}`;
-        const playerTilesRef = ref(db, `gameRoom/players/${currentPlayerId}`);
-        set(playerTilesRef, { tiles: playerTiles });
+    const startTilesCopy = [...array]; // Create a copy of the original array to avoid modifying it
+    
+    // Get 21 random values
+    for (let i = 0; i < count; i++) {
+        const randomIndex = Math.floor(Math.random() * startTilesCopy.length);
+        const randomValue = startTilesCopy.splice(randomIndex, 1)[0]; // Remove the selected value from the array
+        randomValues.push(randomValue);
+        shuffledTiles.splice(randomIndex, 1);
+        htmlPlayer += `<div class="player-tiles" data-index="${randomIndex}">${randomValue}</div>`;
     }
 
-    // Update the original-tiles element with the updated tiles
+    //  Update the original-tiles element with the 21 random tiles
     updateOriginalTiles(element);
-
+    startTiles = startTilesCopy; // Restore the original array
+    
     return randomValues;
-}
+};
 
 const peel = (element) => {
     htmlPlayer = '';
@@ -785,45 +696,6 @@ function checkWords() {
     }
 };
 
-function updateWordsAfterTileRemoval() {
-    // Clear the `wordsToCheck` array
-    wordsToCheck.length = 0;
-
-    // Check horizontally
-    for (let rowIndex = 0; rowIndex < currentRows; rowIndex++) {
-        let word = '';
-        for (let colIndex = 0; colIndex < currentColumns; colIndex++) {
-            const letter = playAreaGrid[rowIndex][colIndex].letter;
-            if (letter !== '') {
-                word += letter;
-            } else if (word !== '' && word.length > 1) {
-                wordsToCheck.push(word);
-                word = '';
-            }
-        }
-        if (word !== '' && word.length > 1) {
-            wordsToCheck.push(word);
-        }
-    }
-
-    // Check vertically
-    for (let colIndex = 0; colIndex < currentColumns; colIndex++) {
-        let word = '';
-        for (let rowIndex = 0; rowIndex < currentRows; rowIndex++) {
-            const letter = playAreaGrid[rowIndex][colIndex].letter;
-            if (letter !== '') {
-                word += letter;
-            } else if (word !== '' && word.length > 1) {
-                wordsToCheck.push(word);
-                word = '';
-            }
-        }
-        if (word !== '' && word.length > 1) {
-            wordsToCheck.push(word);
-        }
-    }
-};
-
 // When the user clicks on the button, open the modal
 btn.onclick = function() {
   modal.style.display = "block";
@@ -854,17 +726,17 @@ const joinGame = (roomId, playerId) => {
     });
 }
 
-const createGame = () => {
-    const newGameRef = push(ref(db, 'gameRooms'));
-    const roomId = newGameRef.key;
-    
+const createGame = async () => {
     // Initialize the game state (e.g., play area)
-    set(ref(db, `gameRooms/${roomId}/playArea`), { /* ... */ });
+    await set(ref(db, `gameRooms/${roomId}/playArea`), { /* ... */ });
 
-    set(ref(db, `gameRooms/${roomId}`), { roomId });
+    // Set the room ID
+    await set(ref(db, `gameRooms/${roomId}`), { roomId });
 
     // Join the game as the first player
     const playerId = 'player1'; // Replace with your preferred identifier logic
     console.log('Game created', roomId);
-    joinGame(roomId, playerId);
+
+    // Return the player ID and room ID
+    return { playerId, roomId };
 }
